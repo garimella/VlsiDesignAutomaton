@@ -2,6 +2,8 @@ package designAutomator;
 
 public class Main {
 	public static void main(String args[]) {
+		Circuit ckt = new Circuit();
+		Chip chip = new Chip();
 		try {
 			// The filename of the test-bench
 //			final String filename = "input/test1";
@@ -9,14 +11,14 @@ public class Main {
 			final String areaListFile = "input/ibm01.are";
 
 			// parsing and printing the netlist statistics for verification
-			Parser p = new Parser();
-			p.parseNetList(netListFile);
-			p.parseAreaList(areaListFile);
-			p.printNetListStatistics();
-			p.printPinStatistics();
-			if (p.netList.getVertexCount() < 100) {
+			
+			ckt.parseNetList(netListFile);
+			ckt.parseAreaList(areaListFile);
+			chip.setArea(ckt.getTotalArea());
+			
+			/*if (p.circuit.getVertexCount() < 100) {
 				p.viewNetList();
-			}
+			}*/
 
 			// next run the simulated annealing algorithm
 			// YALLGOOOO
