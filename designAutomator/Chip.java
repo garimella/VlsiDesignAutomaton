@@ -9,18 +9,33 @@ public class Chip {
 	double width;
 	Vector<Row> rows;
 	
-	
 	public double getArea() {
 		return area;
 	}
 
+	/**
+	 * Sets the area of the chip and creates the data structure for
+	 * rows.
+	 * @param area area of the chip
+	 */
 	public void setArea(double area) {
 		this.area = area;
 		System.out.println("Chip area = " + area);
 		this.height =  this.width = 1.25*Math.sqrt(area);
+		
+		// Create the rows and set the parameters of the rows
+		Row.setWidth(width);
 		rows = new Vector<Row>( (int) (height/40.0));
-		placePads();
+		for (int i = 0;i < rows.size();i++) {
+			rows.setElementAt(new Row(40 * i), i);
+		}
 	}
+	
+	/**
+	 * Place pads uniformly on the periphery of the chip.
+	 * Can be highly refactored ;). Will do it in the end. (Kashyap)
+	 * @author:ScriptDevil
+	 */
 	public void placePads(){
 		// Interval is the gap between two pads. 
 		// This is (Perimeter of Chip)/(No. of Pads)
@@ -109,11 +124,20 @@ public class Chip {
 			System.out.println(padsPlaced + " placed at left edge");
 		}
 	}
-	public double getHeight(){
-		return this.height;
+	
+	public void placeCellsRandomly(){
+		for (Map.Entry<String, Module> cell  : Module.cellList.entrySet()) {
+			int row = (int) Math.random() * rows.size();
+			double randx = Math.random() * this.width;
+			cell.getValue().xPos = randx;
+			cell.getValue().yPos = 40 * row;
+		}
 	}
+	
 	public double getWidth(){
 		return this.width;
 	}
-	
+	public double getHeight(){
+		return this.height;
+	}
 }

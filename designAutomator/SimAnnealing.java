@@ -1,4 +1,0 @@
-package designAutomator;
-
-class SimulatedAnnealing {
-	
