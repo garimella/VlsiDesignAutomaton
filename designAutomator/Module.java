@@ -41,6 +41,8 @@ public class Module {
 	 */
 	static final double HEIGHT = 32.0;
 	
+	Row.Head rowHead;
+	
 	double xPos = 0;
 	double yPos = 0;
 	
