@@ -1,5 +1,7 @@
 package designAutomator;
 
+import java.util.List;
+
 public class SimAnneal {
 	Chip c;
 	Circuit ckt;
@@ -13,10 +15,28 @@ public class SimAnneal {
 	}
 	
 	private double costNet(Net n) {
-		// TODO Auto-generated method stub
-		return 0;
+		double minXPos=0, minYPos=0, maxXPos=0, maxYPos=0;
+		for(String nameOfModule: ckt.circuit.getIncidentVertices(n)){
+			Module m;
+			m = Module.cellList.get(nameOfModule);
+			if(m == null) m = Module.padList.get(nameOfModule);
+			
+			assert(m != null);
+			
+			if(m.xPos > maxXPos) maxXPos = m.xPos;
+			
+			if(m.yPos > maxYPos) maxYPos = m.yPos; 
+			if(m.xPos < minXPos) minXPos = m.xPos;
+			
+			if(m.yPos < minYPos) minYPos = m.yPos;
+		}
+		return ((maxXPos-minXPos) + (maxYPos - minYPos));
 	}
 
+	private double penaltyFunction(double netCost, double overlapCost){
+		return Config.beta*netCost + (1-Config.beta)*overlapCost;		
+	}
+	
 	Module moveSource, moveDest; // Allows unmaking moves
 	double makeMove(){
 		// Make one of the valid moves
@@ -32,6 +52,8 @@ public class SimAnneal {
 		// Weight all the costs to get penalty function
 		return newPartialCost - oldPartialCost;
 	}
+	
+	
 	private void swap() {
 		double tXPos, tYPos;
 		tXPos = moveSource.xPos;
@@ -58,23 +80,16 @@ public class SimAnneal {
 		double hpwl = Math.abs((m2CenterX-m1CenterX)) + Math.abs(m2CenterY - m1CenterY);
 		return hpwl;
 	}
+	List<Row.Head> s;
 	
+	/*
+	 * Cost of all nets connected to the current cell.
+	 * */
 	double cost(Module m1){
 		double totalCost = 0;
 		try {
-			for(String v : ckt.circuit.getNeighbors(m1.name)){
-				Module neighbour;
-				neighbour = Module.cellList.get(v);
-				if(neighbour == null){
-					neighbour = Module.padList.get(v);
-				}
-				if(neighbour != null){
-					totalCost += distance(m1, neighbour);
-				}
-				else {
-					System.err.println("[SimAnneal.java] : Impossible Event - Module is there, but isn't");
-					throw new Exception();
-				}
+			for(Net n : ckt.circuit.getIncidentEdges(m1.name)){
+				totalCost+=costNet(n);
 			}
 		}
 		catch(Exception e){

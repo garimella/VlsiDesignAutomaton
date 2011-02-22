@@ -2,10 +2,6 @@ package designAutomator;
 
 import java.util.Comparator;
 import java.util.PriorityQueue;
-import java.util.Vector;
-
-
-import designAutomator.Row.Head.HeadType;
 
 public class Row {
 	
@@ -13,16 +9,15 @@ public class Row {
 	static double width;
 	double overlap = 0;
 	
-	Vector<Head> headsList;
+	DoublyLinkedList<Head> headsList;
 	PriorityQueue<Module> tempPrioQueue;
 	
 	public Row(int ypos) {
 		// set the y position of the Row
 		this.ypos = ypos;
 		
-		headsList = new Vector<Head>();
-		tempPrioQueue = new PriorityQueue<Module>(10, new CompareXPos());
-		headsList.add(new Head(HeadType.FREE_HEAD, 0, Row.width, null));		
+		headsList = new DoublyLinkedList<Head>();
+		tempPrioQueue = new PriorityQueue<Module>(10, new CompareXPos());		
 	}
 	
 	public void addCellWithoutUpdate(Module m){
@@ -41,36 +36,49 @@ public class Row {
 			if(done < currModuleEnd) {
 				if(currModuleStart - done > 0){
 					// There is free space
-					headsList.add(new Head(Head.HeadType.FREE_HEAD, done, currModuleStart-done, null));
+					headsList.addToEnd(new Head(Head.HeadType.FREE_HEAD, done, currModuleStart-done, null));
 				}
-				headsList.add(new Head(Head.HeadType.MODULE_HEAD,
+				headsList.addToEnd(new Head(Head.HeadType.MODULE_HEAD,
 						currModuleStart, currModuleEnd - currModuleStart, m));
-				m.rowHead = headsList.lastElement();
+				m.rowHead = headsList.tail;
 				done = currModuleEnd;
 			} else {
-				headsList.add(new Head(Head.HeadType.MODULE_HEAD, 
+				headsList.addToEnd(new Head(Head.HeadType.MODULE_HEAD, 
 						currModuleStart, currModuleEnd - currModuleStart, m));
-				m.rowHead = headsList.lastElement();
+				m.rowHead = headsList.tail;
 			}
 		}
 	}
 	
-	public void initialOverlap() {
-		for (int i = 0; i < headsList.size(); i++) {
-			Row.Head curhead = headsList.get(i);
-			for (int j = i + 1; j < headsList.size(); j++) {
-				Row.Head nexthead = headsList.get(j);
-				if (nexthead.xpos > curhead.xpos + curhead.length) {
+	public void initialOverlap(){
+		DoublyLinkedListNode<Row.Head> iter = headsList.head;
+		while(iter != null){
+			Row.Head currHead = iter.data;
+			DoublyLinkedListNode<Row.Head> innerIter = iter.next;
+			while(innerIter != null){
+				Row.Head nextHead = innerIter.data;
+				if(nextHead.xpos > currHead.xpos + currHead.length){
 					break;
-				} else {
-					double end = min ((curhead.xpos + curhead.length),
-							(nexthead.xpos + nexthead.length));
-					overlap += end - nexthead.xpos;
 				}
+				else {
+					double end = min ((currHead.xpos + currHead.length), (nextHead.xpos+ nextHead.length));
+					overlap += end - nextHead.xpos;
+				}
+				innerIter = innerIter.next;
 			}
+			iter = iter.next;
 		}
-	}
+ 	}
 	
+	/* 
+	 * Stupid, Complex, Meaningless yet useful[if ever done]
+	 * replaces oldHead by newHead and returns overlap difference.
+	 */
+	public static double swap(Row row1, DoublyLinkedListNode<Row.Head> head1, Row row2, DoublyLinkedListNode<Row.Head> replacementHead){
+		/*
+		 * Forward 
+		 */
+	}
 	private double min(double a, double b) {
 		return (a > b) ? b : a;
 	}
