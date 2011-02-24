@@ -12,7 +12,7 @@ public class DoublyLinkedList<T> {
 	public int size(){
 		return size;
 	}
-	// Super costly operation
+	
 	public boolean find(T node){
 		for(DoublyLinkedListNode<T> i = head; i != null; i=i.next){
 			if(node == i.data){

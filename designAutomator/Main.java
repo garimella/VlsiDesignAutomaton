@@ -14,16 +14,21 @@ public class Main {
 			ckt.parseNetList(netListFile);
 			ckt.parseAreaList(areaListFile);
 			
+			Module.cellKeyList = Module.cellList.keySet().toArray(new String[0]);
+			Module.padKeyList = Module.padList.keySet().toArray(new String[0]);
+			
 			chip.setArea(ckt.getTotalArea());
 			chip.placePads();
 			chip.placeCellsRandomly();
-			
+			chip.dumpChipPlacements("ibm01_orig.bbb");
 			/*if (p.circuit.getVertexCount() < 100) {
 				p.viewNetList();
 			}*/
 
 			// next run the simulated annealing algorithm
-			// YALLGOOOO
+			SimAnneal simAnneal = new SimAnneal(chip, ckt);
+			simAnneal.simAnneal();
+			chip.dumpChipPlacements("ibm01.bbb");
 		} catch (Exception e) {
 			System.err.println(e.getCause());
 			e.printStackTrace();

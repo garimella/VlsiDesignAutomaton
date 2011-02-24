@@ -1,113 +1,198 @@
 package designAutomator;
 
-import java.util.Comparator;
-import java.util.PriorityQueue;
+import java.util.Vector;
 
 public class Row {
-	
-	int ypos;
+	double ypos;
 	static double width;
-	double overlap = 0;
+
+	// Multiply by Config.binWidth to get the actual width of overlap
+	// This is just the number of cells overlapping in a bin.
+	int totOverlap = 0;
+	Bin overflowBin;
+	Vector<Bin> bins;
 	
-	DoublyLinkedList<Head> headsList;
-	PriorityQueue<Module> tempPrioQueue;
-	
-	public Row(int ypos) {
+	static int numBins;
+	public Row(double d) {
 		// set the y position of the Row
-		this.ypos = ypos;
-		
-		headsList = new DoublyLinkedList<Head>();
-		tempPrioQueue = new PriorityQueue<Module>(10, new CompareXPos());		
+		this.ypos = d;
+				
+		bins = new Vector<Bin>();
+		for (int i = 0; i < numBins; i++) {
+			bins.add(new Bin());
+		}
+		overflowBin = new Bin();
 	}
 	
-	public void addCellWithoutUpdate(Module m){
-		tempPrioQueue.add(m);
-	}
-	
-	public void generateInitialHeadsList(){
-		double done = 0;
-		double currModuleEnd, currModuleStart;
+	public void addCell(Module m){
+		int baseBin = (int) Math.floor(m.xPos/Config.binWidth);
 		
-		while(!tempPrioQueue.isEmpty()){		
-			Module m = tempPrioQueue.poll();
-			currModuleStart = m.xPos;
-			currModuleEnd = m.xPos + m.width;
-			// Update Module object to contain h
-			if(done < currModuleEnd) {
-				if(currModuleStart - done > 0){
-					// There is free space
-					headsList.addToEnd(new Head(Head.HeadType.FREE_HEAD, done, currModuleStart-done, null));
-				}
-				headsList.addToEnd(new Head(Head.HeadType.MODULE_HEAD,
-						currModuleStart, currModuleEnd - currModuleStart, m));
-				m.rowHead = headsList.tail;
-				done = currModuleEnd;
-			} else {
-				headsList.addToEnd(new Head(Head.HeadType.MODULE_HEAD, 
-						currModuleStart, currModuleEnd - currModuleStart, m));
-				m.rowHead = headsList.tail;
+		// Basebin can never be an overflow bin.
+		// Starting position is always same for two cells swapped.
+		// None start at overflow.
+		// By induction :P Q.E.D.
+		bins.get(baseBin).addToBin();
+		m.binInRow = baseBin;	// Module contains only first bin.
+		int extraBins = m.numBins - 1;
+		for(int i = 1; i <= extraBins;i++){
+			if(baseBin+i < numBins){
+				bins.get(baseBin+i).addToBin();
+			}
+			else {				
+				overflowBin.addManyToBin(extraBins-i+1); 
+				break;
 			}
 		}
+		// Add element to bin iff the element actually extends to more
+		// than half of it. Else don't.
+		// Too costly each time. Just drop it.
+		// if(extraBins*m.width > Config.binWidth/2){
+		//	bins.get(baseBin+extraBins+1).addToBin();
+		// }		
 	}
 	
-	public void initialOverlap(){
-		DoublyLinkedListNode<Row.Head> iter = headsList.head;
-		while(iter != null){
-			Row.Head currHead = iter.data;
-			DoublyLinkedListNode<Row.Head> innerIter = iter.next;
-			while(innerIter != null){
-				Row.Head nextHead = innerIter.data;
-				if(nextHead.xpos > currHead.xpos + currHead.length){
-					break;
-				}
-				else {
-					double end = min ((currHead.xpos + currHead.length), (nextHead.xpos+ nextHead.length));
-					overlap += end - nextHead.xpos;
-				}
-				innerIter = innerIter.next;
-			}
-			iter = iter.next;
+	
+	public int initialOverlap(){
+		int totOverlap = 0;
+		for(Bin curBin : bins){
+			if (curBin.numCells > 0)
+				totOverlap += curBin.numCells;
 		}
+		if (overflowBin.numCells > 0)
+			totOverlap += overflowBin.numCells;
+		
+		this.totOverlap = totOverlap;
+		return totOverlap;
  	}
 	
-	/* 
-	 * Stupid, Complex, Meaningless yet useful[if ever done]
-	 * replaces oldHead by newHead and returns overlap difference.
-	 */
-	public static double swap(Row row1, DoublyLinkedListNode<Row.Head> head1, Row row2, DoublyLinkedListNode<Row.Head> replacementHead){
-		/*
-		 * Forward 
-		 */
-	}
-	private double min(double a, double b) {
-		return (a > b) ? b : a;
-	}
-
-	public static void setWidth(double width) {
-		Row.width = width;
-	}
-	
-	public static class Head {
-		HeadType type;
-		double xpos;
-		double length;
-		Module m;
-		public Head(HeadType type, double xpos, double length, Module m) {
-			this.type = type;
-			this.xpos = xpos;
-			this.length = length;
-			m=null;
+	// Calculates overlap. But does not actually swap the modules.
+	public static int incrementalOverlapPartial(Module oldM, Module newM){		
+		int oldOverlap = 0;
+		int newOverlap = 0;
+		
+		for(int i = oldM.binInRow; i < oldM.binInRow+oldM.numBins; i++){
+			if(i < numBins){
+				if (oldM.row.bins.get(i).numCells > 0)
+					oldOverlap += oldM.row.bins.get(i).numCells;
+			}
+			else {
+				if (oldM.row.overflowBin.numCells > 0)
+					oldOverlap += oldM.row.overflowBin.numCells;
+				break;
+			}			
 		}
 		
-		static enum HeadType {
-			MODULE_HEAD, FREE_HEAD
+		int diffNumBins = newM.numBins - oldM.numBins;
+		if(diffNumBins > 0 ){
+			//newM has more cells.
+			newOverlap = oldOverlap;
+			for (int i = oldM.binInRow + oldM.numBins; i < oldM.binInRow + newM.numBins; i++) {
+				if (i < numBins) {
+						newOverlap += oldM.row.bins.get(i).numCells + 1;
+				}
+				else {
+						newOverlap += oldM.row.overflowBin.numCells + 1;
+					break;
+				}		
+			}
+			
 		}
+		else {
+			// oldm has more cells than newM. So
+			// for newM cells, computing overlap is enough
+			newOverlap = oldOverlap;
+			for (int i = oldM.binInRow + newM.numBins; i < oldM.binInRow + oldM.numBins; i++) {
+				if (i < numBins) {
+					if (oldM.row.bins.get(i).numCells > 1)
+						newOverlap -= oldM.row.bins.get(i).numCells - 1;
+				}
+				else {
+					if (oldM.row.overflowBin.numCells > 1)
+						newOverlap -= oldM.row.overflowBin.numCells - 1;
+					break;
+				}
+			}
+		}
+		return (newOverlap - oldOverlap); 
 	}
 	
-	public class CompareXPos implements Comparator<Module>{
-		@Override
-		public int compare(Module arg0, Module arg1) {		
-			return (int) (arg0.xPos - arg1.xPos);
+	public static int swapWithFreeBin(Module m, Bin b){
+		// Swap a free bin with the module and
+		// also compute the total overlap
+		return 0;
+	}
+	
+	static void _swap(Module m1, Module m2){
+		int  tempBinInRow; double tempDouble;
+		Row tempRow;
+		tempRow = m1.row; m1.row = m2.row; m2.row = tempRow;		
+		tempDouble = m1.xPos; m1.xPos = m2.xPos; m2.xPos = tempDouble;
+		tempDouble = m1.yPos; m1.yPos = m2.yPos; m2.yPos = tempDouble;
+		tempBinInRow = m1.binInRow; m1.binInRow = m2.binInRow; m2.binInRow = tempBinInRow;
+	}
+	
+	public static void swap(Module m1, Module m2){
+		
+		// have last bin count for ease
+		int m2LastBin = m2.binInRow+m2.numBins;
+		int m1LastBin = m1.binInRow+m1.numBins;
+		
+		// overflows for each module
+		int m1OverflowBinCount = 0, m2OverflowBinCount = 0;
+		
+		// fix the last bin counts for each module
+		if (m1LastBin >= Row.numBins) {
+			m1OverflowBinCount = m1LastBin - Row.numBins + 1;
+			m1LastBin = Row.numBins - 1;
 		}
+	
+		if (m2LastBin >= Row.numBins) {
+			m2OverflowBinCount = m2LastBin - Row.numBins + 1;
+			m2LastBin = Row.numBins - 1;
+		}
+		
+		
+		int diffNumBins = m2LastBin - m1LastBin;
+		if(diffNumBins == 0){
+			_swap(m1,m2);
+			return;
+		}else  if (diffNumBins < 0) {
+			// m1 has more than m2
+			for (int i = 0; i < -diffNumBins; i++) {
+				if (m2LastBin + i + 1 < Row.width) {
+					m2.row.bins.get(m2LastBin + i + 1).addToBin();
+				} else {
+					assert(false);
+				}
+				assert(m1LastBin - i > 0);
+				m1.row.bins.get(m1LastBin - i).removeFromBin();
+				
+			}
+		}
+		if (diffNumBins > 0) {
+			// m2 has more than m1
+			for (int i = 0; i < diffNumBins; i++) {
+				if (m1LastBin + i + 1 < Row.width) {
+					m1.row.bins.get(m1LastBin + i + 1).addToBin();
+				} else {
+					assert(false);
+				}
+				assert(m2LastBin -i > 0);				
+				m2.row.bins.get(m2LastBin - i).removeFromBin();
+				
+			}
+		}
+		
+		// Set the overflow bins
+		if (m1OverflowBinCount > 0) {
+			m1.row.overflowBin.addManyToBin(-m1OverflowBinCount);
+			m2.row.overflowBin.addManyToBin(m1OverflowBinCount);
+		}
+		if (m2OverflowBinCount > 0) {
+			m2.row.overflowBin.addManyToBin(-m2OverflowBinCount);
+			m1.row.overflowBin.addManyToBin(m2OverflowBinCount);
+		}
+		
+		_swap(m1, m2);
 	}
 }

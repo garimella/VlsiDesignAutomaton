@@ -1,6 +1,9 @@
 package designAutomator;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Vector;
 
 public class Chip {
@@ -24,11 +27,13 @@ public class Chip {
 		this.height =  this.width = 1.25*Math.sqrt(area);
 		
 		// Create the rows and set the parameters of the rows
-		Row.setWidth(width);
-		rows = new Vector<Row>( (int) (height/40.0));
-		for (int i = 0;i < rows.size();i++) {
-			rows.setElementAt(new Row(40 * i), i);
+		Row.width = width;
+		Row.numBins = (int) Math.ceil(width/Config.binWidth);
+		rows = new Vector<Row>();
+		for (int i = 0;i < (int) (height/40.0);i++) {			
+			rows.add(new Row(40.0*i));
 		}
+		System.out.println("height = " + height+ "row size = " + rows.size());
 	}
 	
 	/**
@@ -127,10 +132,17 @@ public class Chip {
 	
 	public void placeCellsRandomly(){
 		for (Map.Entry<String, Module> cell  : Module.cellList.entrySet()) {
-			int row = (int) Math.random() * rows.size();
+			int row = (int)(Math.random() * (rows.size() - 1));
 			double randx = Math.random() * this.width;
-			cell.getValue().xPos = randx;
-			cell.getValue().yPos = 40 * row;
+			Module m = cell.getValue();
+			m.xPos = randx;
+			m.yPos = 40.0 * row;
+			m.row = rows.elementAt(row);
+			m.numBins = (int) Math.floor(m.width/Config.binWidth);
+			rows.get(row).addCell(m);
+		}
+		for(Row row : rows){
+			row.initialOverlap();
 		}
 	}
 	
@@ -139,5 +151,42 @@ public class Chip {
 	}
 	public double getHeight(){
 		return this.height;
+	}
+
+	public static void padSwap(Module p1, Module p2) {
+		double t;
+		t = p1.xPos; p1.xPos = p2.xPos; p2.xPos = t;
+		t = p1.yPos; p1.yPos = p2.yPos; p2.yPos = t;		
+	}
+	public void dumpChipPlacements(String fileName){
+		try
+		{
+			FileWriter fstream = new FileWriter(fileName);
+			BufferedWriter out = new BufferedWriter(fstream);			
+			out.write(Double.toString(this.width) + "\n");
+			out.write(Double.toString(this.height) + "\n");
+			out.write(Integer.toString(Module.cellKeyList.length+Module.padKeyList.length) +"\n");
+			for(Entry<String, Module> modEntry: Module.cellList.entrySet()){
+				out.write(Double.toString(modEntry.getValue().width) + " " 
+					+ Double.toString(Module.HEIGHT) + " " + modEntry.getValue().name + "\n");
+			}
+			for(Entry<String, Module> modEntry: Module.padList.entrySet()){
+				out.write(Double.toString(modEntry.getValue().width) + " " 
+					+ Double.toString(Module.HEIGHT) + " " + modEntry.getValue().name + "\n");
+			}
+			out.write("\n");
+			for(Entry<String, Module> modEntry: Module.cellList.entrySet()){
+				out.write(Double.toString(modEntry.getValue().xPos) + " " 
+					+ Double.toString(modEntry.getValue().yPos) + "\n");
+			}
+			for(Entry<String, Module> modEntry: Module.padList.entrySet()){
+				out.write(Double.toString(modEntry.getValue().xPos) + " " 
+					+ Double.toString(modEntry.getValue().yPos) + "\n");
+			}
+			out.close();
+	    }
+		catch (Exception e){//Catch exception if any
+	      System.err.println("Error: " + e.getMessage());
+	    }
 	}
 }

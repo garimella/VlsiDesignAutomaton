@@ -9,6 +9,8 @@ public class Module {
 	 */
 	static Map<String, Module> cellList = new HashMap<String, Module>();
 	static Map<String, Module> padList = new HashMap<String, Module>(); 
+	static String []cellKeyList;
+	static String []padKeyList;
 	
 	/**
 	 * The name of the module. Starts with 'p' if it is a pin, 
@@ -41,8 +43,9 @@ public class Module {
 	 */
 	static final double HEIGHT = 32.0;
 	
-	DoublyLinkedListNode<Row.Head> rowHead;
-	
+	Row row;
+	int binInRow;
+	int numBins;
 	double xPos = 0;
 	double yPos = 0;
 	
