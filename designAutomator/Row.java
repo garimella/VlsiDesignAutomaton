@@ -1,8 +1,11 @@
 package designAutomator;
 
+import java.util.Collection;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.Vector;
+
+import org.apache.commons.collections15.set.ListOrderedSet;
 
 public class Row {
 	double ypos;
@@ -13,14 +16,14 @@ public class Row {
 	int totOverlap = 0;
 	Bin overflowBin;
 	Vector<Bin> bins;
-	SortedSet<Integer> freeBins;
+	ListOrderedSet<Integer> freeBins;
 	static int numBins;
 	public Row(double d) {
 		// set the y position of the Row
 		this.ypos = d;
 				
 		bins = new Vector<Bin>();
-		freeBins = new TreeSet<Integer>();
+		freeBins = new ListOrderedSet<Integer>();
 		for (int i = 0; i < numBins; i++) {
 			Bin b = new Bin();
 			bins.add(b);
@@ -32,15 +35,19 @@ public class Row {
 	void addToBinAndUpdateFreeBins(int binPos){
 		int overlapAmount = bins.get(binPos).addToBin();
 		if(overlapAmount >= 0){
-			freeBins.remove(binPos);
+			if(freeBins.contains(binPos)){
+				freeBins.remove(freeBins.indexOf(binPos));
+			}
 		}
 	}
+	
 	void removeFromBinAndUpdateFreeBins(int binPos){
 		int numCells = bins.get(binPos).removeFromBin();
 		if(numCells == -1){
 			freeBins.add(binPos);
 		}
 	}
+	
 	public void addCell(Module m){
 		int baseBin = (int) Math.floor(m.xPos/Config.binWidth);
 		
@@ -49,13 +56,12 @@ public class Row {
 		// None start at overflow.
 		// By induction :P Q.E.D.		
 		addToBinAndUpdateFreeBins(baseBin);
-
+		
 		m.binInRow = baseBin;	// Module contains only first bin.
 		int extraBins = m.numBins - 1;
 		for(int i = 1; i <= extraBins;i++){
 			if(baseBin+i < numBins){
 				addToBinAndUpdateFreeBins(baseBin+i);
-				
 			}
 			else {				
 				overflowBin.addManyToBin(extraBins-i+1); 
@@ -70,20 +76,41 @@ public class Row {
 		// }		
 	}
 	
-	
 	public int initialOverlap(){
 		int totOverlap = 0;
 		for(Bin curBin : bins){
 			if (curBin.overlapAmount > 0)
 				totOverlap += curBin.overlapAmount;
 		}
+	
 		if (overflowBin.overlapAmount > 0)
 			totOverlap += overflowBin.overlapAmount;
-		
+	
 		this.totOverlap = totOverlap;
 		return totOverlap;
  	}
 
+	public static int incrementalOverlapSwapFree(Module module, Row row, int freeBinIndex) {
+		//Module freeTempModule = new Module("tempFreeModule");
+		//freeTempModule.row = row;
+		//freeTempModule.binInRow = row.freeBins.get(freeBinIndex);
+		//System.out.println("Size of the freeBins = " + row.freeBins.size() 
+		//		+ " freeBinIndex = " + freeBinIndex + " row number = " + (row.ypos/40));
+//		freeTempModule.numBins = 0;
+//		
+//		freeTempModule.xPos = row.freeBins.get(freeBinIndex) * Config.binWidth;
+//		return  incrementalOverlapPartial(freeTempModule, module)
+//		 + incrementalOverlapPartial(module, freeTempModule);
+		
+		// For the entire row, find overlap and subtract the len of module.
+		int overlap = 0;
+		for(Bin curBin : row.bins){
+			if (curBin.overlapAmount > 0)
+				overlap += curBin.overlapAmount;
+		}
+		return overlap - module.numBins - 1;
+	}
+	
 	// Calculates overlap. But does not actually swap the modules.
 	public static int incrementalOverlapPartial(Module oldM, Module newM){		
 		int oldOverlap = 0;
@@ -135,10 +162,28 @@ public class Row {
 		return (newOverlap - oldOverlap); 
 	}
 	
-	public static int swapWithFreeBin(Module m, Bin b){
-		// Swap a free bin with the module and
-		// also compute the total overlap
-		return 0;
+	public static void swapWithFreeBin(Module m, Row row, int freeBinIndex){
+		//System.out.println("I am swapping, m.row = " + m.row.ypos + " m.free = " + m.row.freeBins.size() 
+		//		+ " row = " + row.ypos + " row.free = " + row.freeBins.size());
+		int reallyTeporaryFreeBinIndex = row.freeBins.get(freeBinIndex);
+		for (int i = 0; i < m.numBins; i ++) {
+			if (m.binInRow + i < numBins) {
+				m.row.removeFromBinAndUpdateFreeBins(m.binInRow + i);
+			}
+			else {
+				m.row.overflowBin.removeFromBin();
+			}
+			if (reallyTeporaryFreeBinIndex  + i < numBins) {
+				row.addToBinAndUpdateFreeBins(reallyTeporaryFreeBinIndex  + i);
+			}
+			else {
+				row.overflowBin.addToBin();
+			}
+		}
+		m.row = row;
+		m.xPos = Config.binWidth * reallyTeporaryFreeBinIndex;
+		m.yPos = row.ypos;
+		m.binInRow = reallyTeporaryFreeBinIndex;
 	}
 	
 	static void _swap(Module m1, Module m2){
@@ -184,7 +229,7 @@ public class Row {
 					assert(false);
 				}
 				assert(m1LastBin - i > 0);
-				m1.row.bins.get(m1LastBin - i).removeFromBin();
+				m1.row.removeFromBinAndUpdateFreeBins(m1LastBin - i);
 				
 			}
 		}
@@ -197,7 +242,7 @@ public class Row {
 					assert(false);
 				}
 				assert(m2LastBin -i > 0);				
-				m2.row.bins.get(m2LastBin - i).removeFromBin();
+				m2.row.removeFromBinAndUpdateFreeBins(m2LastBin - i);
 				
 			}
 		}

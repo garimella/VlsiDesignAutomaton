@@ -21,9 +21,9 @@ public class Main {
 			chip.placePads();
 			chip.placeCellsRandomly();
 			chip.dumpChipPlacements("ibm01_orig.bbb");
-			/*if (p.circuit.getVertexCount() < 100) {
-				p.viewNetList();
-			}*/
+//			if (chip.circuit.getVertexCount() < 100) {
+//				chip.viewNetList();
+//			}
 
 			// next run the simulated annealing algorithm
 			SimAnneal simAnneal = new SimAnneal(chip, ckt);

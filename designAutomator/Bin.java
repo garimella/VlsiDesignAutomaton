@@ -18,6 +18,7 @@ public class Bin {
 		return (overlapAmount == -1);
 	}
 	public int removeFromBin(){
+		assert (overlapAmount >= 0);
 		overlapAmount--;
 		return overlapAmount;
 	}

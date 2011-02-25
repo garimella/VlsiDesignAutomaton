@@ -131,15 +131,16 @@ public class Chip {
 	}
 	
 	public void placeCellsRandomly(){
-		for (Map.Entry<String, Module> cell  : Module.cellList.entrySet()) {
+		for (Map.Entry<String, Module> cellEntryList  : Module.cellList.entrySet()) {
 			int row = (int)(Math.random() * (rows.size() - 1));
-			double randx = Math.random() * this.width;
-			Module m = cell.getValue();
-			m.xPos = randx;
-			m.yPos = 40.0 * row;
-			m.row = rows.elementAt(row);
-			m.numBins = (int) Math.floor(m.width/Config.binWidth);
-			rows.get(row).addCell(m);
+			int randBin = (int)(Math.random() * Row.numBins);
+			double randx = randBin * Config.binWidth;
+			Module module = cellEntryList.getValue();
+			module.xPos = randx;
+			module.yPos = 40.0 * row;
+			module.row = rows.elementAt(row);
+			module.numBins = (int) Math.floor(module.width/Config.binWidth);
+			rows.get(row).addCell(module);
 		}
 		for(Row row : rows){
 			row.initialOverlap();
