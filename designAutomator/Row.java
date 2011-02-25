@@ -1,5 +1,7 @@
 package designAutomator;
 
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.Vector;
 
 public class Row {
@@ -11,32 +13,49 @@ public class Row {
 	int totOverlap = 0;
 	Bin overflowBin;
 	Vector<Bin> bins;
-	
+	SortedSet<Integer> freeBins;
 	static int numBins;
 	public Row(double d) {
 		// set the y position of the Row
 		this.ypos = d;
 				
 		bins = new Vector<Bin>();
+		freeBins = new TreeSet<Integer>();
 		for (int i = 0; i < numBins; i++) {
-			bins.add(new Bin());
+			Bin b = new Bin();
+			bins.add(b);
+			freeBins.add(i);
 		}
-		overflowBin = new Bin();
+		overflowBin = new Bin();		
 	}
 	
+	void addToBinAndUpdateFreeBins(int binPos){
+		int overlapAmount = bins.get(binPos).addToBin();
+		if(overlapAmount >= 0){
+			freeBins.remove(binPos);
+		}
+	}
+	void removeFromBinAndUpdateFreeBins(int binPos){
+		int numCells = bins.get(binPos).removeFromBin();
+		if(numCells == -1){
+			freeBins.add(binPos);
+		}
+	}
 	public void addCell(Module m){
 		int baseBin = (int) Math.floor(m.xPos/Config.binWidth);
 		
 		// Basebin can never be an overflow bin.
 		// Starting position is always same for two cells swapped.
 		// None start at overflow.
-		// By induction :P Q.E.D.
-		bins.get(baseBin).addToBin();
+		// By induction :P Q.E.D.		
+		addToBinAndUpdateFreeBins(baseBin);
+
 		m.binInRow = baseBin;	// Module contains only first bin.
 		int extraBins = m.numBins - 1;
 		for(int i = 1; i <= extraBins;i++){
 			if(baseBin+i < numBins){
-				bins.get(baseBin+i).addToBin();
+				addToBinAndUpdateFreeBins(baseBin+i);
+				
 			}
 			else {				
 				overflowBin.addManyToBin(extraBins-i+1); 
@@ -55,16 +74,16 @@ public class Row {
 	public int initialOverlap(){
 		int totOverlap = 0;
 		for(Bin curBin : bins){
-			if (curBin.numCells > 0)
-				totOverlap += curBin.numCells;
+			if (curBin.overlapAmount > 0)
+				totOverlap += curBin.overlapAmount;
 		}
-		if (overflowBin.numCells > 0)
-			totOverlap += overflowBin.numCells;
+		if (overflowBin.overlapAmount > 0)
+			totOverlap += overflowBin.overlapAmount;
 		
 		this.totOverlap = totOverlap;
 		return totOverlap;
  	}
-	
+
 	// Calculates overlap. But does not actually swap the modules.
 	public static int incrementalOverlapPartial(Module oldM, Module newM){		
 		int oldOverlap = 0;
@@ -72,12 +91,12 @@ public class Row {
 		
 		for(int i = oldM.binInRow; i < oldM.binInRow+oldM.numBins; i++){
 			if(i < numBins){
-				if (oldM.row.bins.get(i).numCells > 0)
-					oldOverlap += oldM.row.bins.get(i).numCells;
+				if (oldM.row.bins.get(i).overlapAmount > 0)
+					oldOverlap += oldM.row.bins.get(i).overlapAmount;
 			}
 			else {
-				if (oldM.row.overflowBin.numCells > 0)
-					oldOverlap += oldM.row.overflowBin.numCells;
+				if (oldM.row.overflowBin.overlapAmount > 0)
+					oldOverlap += oldM.row.overflowBin.overlapAmount;
 				break;
 			}			
 		}
@@ -88,10 +107,10 @@ public class Row {
 			newOverlap = oldOverlap;
 			for (int i = oldM.binInRow + oldM.numBins; i < oldM.binInRow + newM.numBins; i++) {
 				if (i < numBins) {
-						newOverlap += oldM.row.bins.get(i).numCells + 1;
+						newOverlap += oldM.row.bins.get(i).overlapAmount + 1;
 				}
 				else {
-						newOverlap += oldM.row.overflowBin.numCells + 1;
+						newOverlap += oldM.row.overflowBin.overlapAmount + 1;
 					break;
 				}		
 			}
@@ -103,12 +122,12 @@ public class Row {
 			newOverlap = oldOverlap;
 			for (int i = oldM.binInRow + newM.numBins; i < oldM.binInRow + oldM.numBins; i++) {
 				if (i < numBins) {
-					if (oldM.row.bins.get(i).numCells > 1)
-						newOverlap -= oldM.row.bins.get(i).numCells - 1;
+					if (oldM.row.bins.get(i).overlapAmount > 1)
+						newOverlap -= oldM.row.bins.get(i).overlapAmount - 1;
 				}
 				else {
-					if (oldM.row.overflowBin.numCells > 1)
-						newOverlap -= oldM.row.overflowBin.numCells - 1;
+					if (oldM.row.overflowBin.overlapAmount > 1)
+						newOverlap -= oldM.row.overflowBin.overlapAmount - 1;
 					break;
 				}
 			}
@@ -160,7 +179,7 @@ public class Row {
 			// m1 has more than m2
 			for (int i = 0; i < -diffNumBins; i++) {
 				if (m2LastBin + i + 1 < Row.width) {
-					m2.row.bins.get(m2LastBin + i + 1).addToBin();
+					m2.row.addToBinAndUpdateFreeBins(m2LastBin + i + 1);
 				} else {
 					assert(false);
 				}
@@ -173,7 +192,7 @@ public class Row {
 			// m2 has more than m1
 			for (int i = 0; i < diffNumBins; i++) {
 				if (m1LastBin + i + 1 < Row.width) {
-					m1.row.bins.get(m1LastBin + i + 1).addToBin();
+					m1.row.addToBinAndUpdateFreeBins(m1LastBin + i + 1);
 				} else {
 					assert(false);
 				}
