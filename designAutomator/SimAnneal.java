@@ -55,7 +55,8 @@ public class SimAnneal {
 	
 	// set during the constructor
 	double cellRatio;
-	double currDiffOverlapCost, currDiffNetCost;
+	int currDiffOverlapCost = 0;
+	double currDiffNetCost = 0;
 	
 	double calcCellMoveCost(Module moveSource, Module moveDest) {		
 		currDiffOverlapCost = Row
@@ -76,7 +77,7 @@ public class SimAnneal {
 		currDiffOverlapCost = Row.incrementalOverlapSwapFree(moveSource, row, freeBinIndex);
 		Module freeTempModule = new Module("tempFreeModule");
 		freeTempModule.xPos = row.freeBins.get(freeBinIndex) * Config.binWidth;
-		freeTempModule.yPos = row.ypos;
+		freeTempModule.yPos = row.yPos;
 		
 		double oldNetCost = cost(moveSource);
 		_swap(moveSource, freeTempModule);
@@ -156,7 +157,7 @@ public class SimAnneal {
 		int rejectCount = 0;
 		// Fix stopping and innerLoop conditions
 		System.out.println("BEFORE: Net Cost = " +  totalNetCost + "; Overlap Cost = " + totalOverlapCost);
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 100; i++) {
 			acceptCount=0;
 			rejectCount=0;
 			for (int j=0; j < Config.M; j = j+Config.innerConditionUpdate) {
@@ -181,12 +182,11 @@ public class SimAnneal {
 					}
 					else {
 						wasCellToCellMove = false;
-						// cell to freespace
-						
+						// cell to free bin
 						int randRowIndex = (int) (Math.random()*(c.rows.size() -1));
 						randRow  = c.rows.get(randRowIndex);
-//						while ((randRow.freeBins.size() < 1) || (chosen1.row == randRow)) {
-						while ((randRow.freeBins.size() < 1)) {
+						while ((randRow.freeBins.size() < 1) || (chosen1.row == randRow)) {
+						//while ((randRow.freeBins.size() < 1)) {
 							randRowIndex = (int) (Math.random() * (c.rows
 									.size() - 1));
 							randRow = c.rows.get(randRowIndex);
@@ -228,7 +228,7 @@ public class SimAnneal {
 	}
 	
 	private void makeCellMove(Module m1, Module m2) {
-		Row.swap(m1, m2);
+		Row.swapCellWithCell(m1, m2);
 	}
 	private void makeCellToFreeMove(Module m, Row r, int freeBinIndex){
 		Row.swapWithFreeBin(m, r, freeBinIndex);
@@ -248,8 +248,8 @@ public class SimAnneal {
 //				+ "given diff=" + diffCost);
 		if(r < y){
 			System.out.println("accepted, diff = " + diffCost +
-					"overlap diff=" + currDiffOverlapCost + "net diff"
-					+ currDiffNetCost);
+					" overlap diff=" + currDiffOverlapCost + " net diff"
+					+ currDiffNetCost + " total overlap cost = " + totalOverlapCost);
 			return true;
 		}
 		else {

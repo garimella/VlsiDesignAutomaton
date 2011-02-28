@@ -28,7 +28,7 @@ public class Chip {
 		
 		// Create the rows and set the parameters of the rows
 		Row.width = width;
-		Row.numBins = (int) Math.ceil(width/Config.binWidth);
+		Row.totalBinsInRow = (int) Math.ceil(width/Config.binWidth);
 		rows = new Vector<Row>();
 		for (int i = 0;i < (int) (height/40.0);i++) {			
 			rows.add(new Row(40.0*i));
@@ -132,14 +132,14 @@ public class Chip {
 	
 	public void placeCellsRandomly(){
 		for (Map.Entry<String, Module> cellEntryList  : Module.cellList.entrySet()) {
+			// choose a random row
 			int row = (int)(Math.random() * (rows.size() - 1));
-			int randBin = (int)(Math.random() * Row.numBins);
-			double randx = randBin * Config.binWidth;
+			
+			// choose a random bin in that
+			int randBin = (int)(Math.random() * (Row.totalBinsInRow - 1));
+			
 			Module module = cellEntryList.getValue();
-			module.xPos = randx;
-			module.yPos = 40.0 * row;
-			module.row = rows.elementAt(row);
-			module.numBins = (int) Math.floor(module.width/Config.binWidth);
+			module.setPosition(rows.get(row), randBin);
 			rows.get(row).addCell(module);
 		}
 		for(Row row : rows){
