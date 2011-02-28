@@ -83,6 +83,8 @@ public class SimAnneal {
 		double newNetCost = cost(moveSource);
 		_swap(moveSource, freeTempModule);
 		currDiffNetCost = newNetCost - oldNetCost;
+//		System.out.println("net diff = " + currDiffNetCost + 
+//				"overlap diff = " + currDiffOverlapCost);
 		return penaltyFunction(currDiffNetCost, currDiffOverlapCost);
 	}
 	
@@ -99,6 +101,9 @@ public class SimAnneal {
 		double newPartialCost = cost(moveSource) + cost(moveDest);
 		_swap(moveDest, moveSource);
 		currDiffNetCost = newPartialCost - oldPartialCost;
+		// Due to pad moves, ovelap will never change! (Kashyap)
+		// This is the bug which is causing random increase in overlap
+		currDiffOverlapCost = 0;
 		return penaltyFunction(currDiffNetCost, 0);
 	}
 	
@@ -151,7 +156,7 @@ public class SimAnneal {
 		int rejectCount = 0;
 		// Fix stopping and innerLoop conditions
 		System.out.println("BEFORE: Net Cost = " +  totalNetCost + "; Overlap Cost = " + totalOverlapCost);
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 1000; i++) {
 			acceptCount=0;
 			rejectCount=0;
 			for (int j=0; j < Config.M; j = j+Config.innerConditionUpdate) {
@@ -239,12 +244,16 @@ public class SimAnneal {
 	private boolean accept(double diffCost, double t) {
 		double y = min(1,Math.pow(Math.E, -diffCost/t));
 		double r = Math.random();
-		System.out.println("Choosing between " + y + "\t" + r + "for "
-				+ "given diff=" + diffCost);
+//		System.out.println("Choosing between " + y + "\t" + r + "for "
+//				+ "given diff=" + diffCost);
 		if(r < y){
+			System.out.println("accepted, diff = " + diffCost +
+					"overlap diff=" + currDiffOverlapCost + "net diff"
+					+ currDiffNetCost);
 			return true;
 		}
 		else {
+			//System.out.println(" rejected");
 			return false;
 		}
 	}

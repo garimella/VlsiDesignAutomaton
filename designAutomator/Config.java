@@ -2,7 +2,7 @@ package designAutomator;
 
 public class Config {
 	// TODO: tStart = number of blocks
-	static float tStart = 10000;
+	static float tStart = 100000;
 	static float tEnd = 1;
 	static double binWidth = 5;
 	// TODO: make it a good function
