@@ -53,7 +53,7 @@ public class Module {
 	public void setPosition(Row row, int binInRow) {
 		this.row = row;
 		this.binInRow = binInRow;
-		this.numBins = (int)(this.width / Config.binWidth);
+		this.numBins = (int)Math.ceil(this.width / Config.binWidth);
 		xPos = binInRow * Config.binWidth;
 		yPos = row.yPos;
 	}

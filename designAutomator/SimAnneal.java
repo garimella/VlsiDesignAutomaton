@@ -58,10 +58,11 @@ public class SimAnneal {
 	int currDiffOverlapCost = 0;
 	double currDiffNetCost = 0;
 	
-	double calcCellMoveCost(Module moveSource, Module moveDest) {		
-		currDiffOverlapCost = Row
-				.incrementalOverlapPartial(moveSource, moveDest)
-				+ Row.incrementalOverlapPartial(moveDest, moveSource);
+	double calcCellMoveCost(Module moveSource, Module moveDest) {
+		currDiffOverlapCost = Row.incrementalOverlap(moveSource, moveDest);
+//		currDiffOverlapCost = Row
+//				.incrementalOverlapPartial(moveSource, moveDest)
+//				+ Row.incrementalOverlapPartial(moveDest, moveSource);
 		double oldPartialCost = cost(moveSource) + cost(moveDest);
 
 		_swap(moveSource, moveDest);
@@ -157,7 +158,7 @@ public class SimAnneal {
 		int rejectCount = 0;
 		// Fix stopping and innerLoop conditions
 		System.out.println("BEFORE: Net Cost = " +  totalNetCost + "; Overlap Cost = " + totalOverlapCost);
-		for (int i = 0; i < 100; i++) {
+		while(t > Config.tEnd){
 			acceptCount=0;
 			rejectCount=0;
 			for (int j=0; j < Config.M; j = j+Config.innerConditionUpdate) {
@@ -167,7 +168,7 @@ public class SimAnneal {
 				Row randRow = null;
 				int freeBinIndex =  0;
 				double selectPadOrCell = Math.random();
-				selectPadOrCell = cellRatio/4;
+//				selectPadOrCell = cellRatio/2;
 				boolean wasCellToCellMove = false;
 				if (selectPadOrCell < cellRatio) {
 					wasPadMove = false;
@@ -179,8 +180,14 @@ public class SimAnneal {
 					if(selectPadOrCell < cellRatio/3){
 						// cell to cell move
 						chosen2 = Module.cellList.get(Module.cellKeyList[(int) (Math.random()*(Module.cellKeyList.length - 1))]);
-						diffCost = calcCellMoveCost(chosen1, chosen2);
-						wasCellToCellMove =  true;
+						if((Row.totalBinsInRow - chosen2.binInRow < chosen1.numBins)
+							|| (Row.totalBinsInRow - chosen1.binInRow < chosen2.numBins)){
+							continue; // Don't allow overflows
+						}
+						else {
+							diffCost = calcCellMoveCost(chosen1, chosen2);
+							wasCellToCellMove =  true;
+						}
 					}
 					else {
 						wasCellToCellMove = false;
@@ -194,7 +201,12 @@ public class SimAnneal {
 							randRow = c.rows.get(randRowIndex);
 						}
 						freeBinIndex = (int) (Math.random() * (randRow.freeBins.size() - 1));
-						diffCost = calcCellToFreeMoveCost(chosen1, randRow, freeBinIndex);
+						if(chosen1.numBins > Row.totalBinsInRow - randRow.freeBins.get(freeBinIndex)){
+							continue;
+						}
+						else {
+							diffCost = calcCellToFreeMoveCost(chosen1, randRow, freeBinIndex);
+						}
 					}					
 				} else {
 					chosen1 = Module.padList.get(Module.padKeyList[(int) (Math.random()*Module.padKeyList.length)]);
@@ -206,6 +218,10 @@ public class SimAnneal {
 				if(accept(diffCost, t)){
 					acceptCount++;					
 					totalNetCost += currDiffNetCost;
+					if(acceptCount%100==0) {
+//						System.out.println("[Internal] totOverlapCost=" + totalOverlapCost);
+//						System.out.println("[Internal] currDiffCost=" + currDiffOverlapCost);
+					}
 					totalOverlapCost += currDiffOverlapCost;			
 					if(wasPadMove){
 						makePadMove(chosen1, chosen2);						
@@ -213,6 +229,9 @@ public class SimAnneal {
 					else {
 						if(wasCellToCellMove) {
 							makeCellMove(chosen1, chosen2);
+							if(acceptCount%100==0) {
+								
+							}
 						}
 						else { 
 							makeCellToFreeMove(chosen1, randRow, freeBinIndex);
@@ -226,6 +245,8 @@ public class SimAnneal {
 			//System.out.println("Acceptance Ratio:" + ((double)acceptCount/(acceptCount+rejectCount)));
 			t = update(t);
 		}
+		System.out.println("Total Net Cost = " + totalNetCost+ " total overlap cost = " + totalOverlapCost);
+		System.out.println("Computed After: Cost Net = " + initialNetCost() + "Overlap = " + initialOverlapCost() );
 		System.out.println("AFTER: Net Cost = " +  totalNetCost + "; Overlap Cost = " + totalOverlapCost);
 	}
 	
@@ -248,10 +269,7 @@ public class SimAnneal {
 		double r = Math.random();
 //		System.out.println("Choosing between " + y + "\t" + r + "for "
 //				+ "given diff=" + diffCost);
-		if(r < y){
-			System.out.println("accepted, diff = " + diffCost +
-					" overlap diff=" + currDiffOverlapCost + " net diff"
-					+ currDiffNetCost + " total overlap cost = " + totalOverlapCost);
+		if(r < y){			
 			return true;
 		}
 		else {
