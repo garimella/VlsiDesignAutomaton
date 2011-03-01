@@ -167,12 +167,14 @@ public class SimAnneal {
 				Row randRow = null;
 				int freeBinIndex =  0;
 				double selectPadOrCell = Math.random();
+				selectPadOrCell = cellRatio/4;
 				boolean wasCellToCellMove = false;
 				if (selectPadOrCell < cellRatio) {
-					
-					// choose with probability a cell with module or freespace
-					chosen1 = Module.cellList.get(Module.cellKeyList[(int) (Math.random()*(Module.cellKeyList.length - 1))]);
 					wasPadMove = false;
+					// choose with probability a cell with module 
+					// or free bin
+					chosen1 = Module.cellList.get(
+							Module.cellKeyList[(int) (Math.random()*(Module.cellKeyList.length - 1))]);
 					
 					if(selectPadOrCell < cellRatio/3){
 						// cell to cell move
@@ -218,7 +220,7 @@ public class SimAnneal {
 						}
 					}
 				} else {
-					rejectCount++;					
+					rejectCount++;
 				}
 			}
 			//System.out.println("Acceptance Ratio:" + ((double)acceptCount/(acceptCount+rejectCount)));
