@@ -153,6 +153,11 @@ public class SimAnneal {
 		double t = Config.tStart;
 		int acceptCount = 0;
 		int rejectCount = 0;
+		
+		// TODO: make it a function of t
+		double windowHeight = (c.rows.size()/4) * 40 * Math.log10(10 * t);
+		//double windowHeight = 40 * 10 ;
+		double windowWidth = 0;
 		// Fix stopping and innerLoop conditions
 		System.out.println("BEFORE: Net Cost = " +  totalNetCost + "; Overlap Cost = " + totalOverlapCost);
 		while(t > Config.tEnd){
@@ -178,9 +183,15 @@ public class SimAnneal {
 
 					if (selectPadOrCell < cellRatio / 3) {
 						// cell to cell move
-						
-						chosen2 = Module.cellList
-								.get(Module.cellKeyList[(int) (Math.random() * (Module.cellKeyList.length - 1))]);
+						double randRowIndex = chosen1.row.yPos - windowHeight/2 + Math.random() * windowHeight;
+						if (randRowIndex >= c.rows.size() * 40)
+							randRowIndex = (c.rows.size() - 1) * 40.0;
+						if (randRowIndex < 0)
+							randRowIndex = 0;
+						randRow = c.rows.get((int)(randRowIndex/40.0));
+						chosen2 = randRow.moduleList.get((int)Math.round((randRow.moduleList.size() - 1)* Math.random()));
+//						chosen2 = Module.cellList
+//								.get(Module.cellKeyList[(int) (Math.random() * (Module.cellKeyList.length - 1))]);
 //						while (chosen1.row == chosen2.row) {
 //							chosen2 = Module.cellList
 //							.get(Module.cellKeyList[(int) (Math.random() * (Module.cellKeyList.length - 1))]);
@@ -261,7 +272,7 @@ public class SimAnneal {
 			System.out.println("Acceptance Ratio:" +
 			((double)acceptCount/(acceptCount+rejectCount)) + "; t = " + t);
 			t = update(t);
-			
+			windowHeight = (c.rows.size()/5) * 40 * Math.log10(10 * t);
 		}
 		
 		System.out.println("Total Net Cost = " + totalNetCost

@@ -30,6 +30,11 @@ public class Row {
 	ListOrderedSet<Integer> freeBins;
 	
 	/**
+	 * List of all the modules inside the row
+	 */
+	ListOrderedSet<Module> moduleList;
+	
+	/**
 	 * Total number of bins in a row
 	 */
 	static int totalBinsInRow;
@@ -51,6 +56,7 @@ public class Row {
 			bins.add(b);
 			freeBins.add(i);
 		}			
+		moduleList = new ListOrderedSet<Module>();
 	}
 	
 	/**
@@ -59,7 +65,7 @@ public class Row {
 	 */
 	void addCellToBinAndUpdateFreeBins(int binPos){
 		int overlapAmount = bins.get(binPos).addToBin();
-		if(overlapAmount >= 0 && freeBins.contains(binPos)){
+		if(overlapAmount >= 0 && freeBins.contains(binPos)) {
 			freeBins.remove(freeBins.indexOf(binPos));
 		}
 	}
@@ -90,6 +96,7 @@ public class Row {
 				addCellToBinAndUpdateFreeBins(startBin + i);
 			}			
 		}
+		moduleList.add(m);
 	}
 	
 	/**
@@ -107,7 +114,6 @@ public class Row {
 		return overlap;
  	}
 
-	
 	
 	/**
 	 * Returns the incremental overlap when module1 is replace by
@@ -328,7 +334,9 @@ public class Row {
 		}
 		
 		// set the module's position to the new row's free bin
+		module.row.moduleList.remove(module);
 		module.setPosition(row, freeBinIndexInRow);
+		module.row.moduleList.add(module);
 	}
 	static void swapWithFreeBinWithoutUpdateFreeBins(Module module, Row row, 
 			int freeBinIndex){
@@ -359,6 +367,9 @@ public class Row {
 	 * @param m2
 	 */
 	static void _swap(Module m1, Module m2){
+		m1.row.moduleList.remove(m1);
+		m2.row.moduleList.remove(m2);
+		
 		Row tempRow;
 		tempRow = m1.row; 
 		m1.row = m2.row; 
@@ -376,5 +387,8 @@ public class Row {
 		tempBinInRow = m1.binInRow; 
 		m1.binInRow = m2.binInRow; 
 		m2.binInRow = tempBinInRow;
+		
+		m1.row.moduleList.add(m1);
+		m2.row.moduleList.add(m2);
 	}
 }
