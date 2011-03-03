@@ -2,8 +2,8 @@ package designAutomator;
 
 public class Config {
 	// TODO: tStart = number of blocks
-	static float tStart = 100000;
-	static float tEnd = 0.0001f;
+	static float tStart = 10000;
+	static float tEnd = .1f;
 	static double binWidth = 5;
 	// TODO: make it a good function
 	static float alpha(double temperature){
@@ -12,7 +12,8 @@ public class Config {
 	// based on temperature
 	static float beta = 0.8f;
 	static int innerConditionUpdate = 1;
-	static int M = 500;
+	static int M = 200;
+	static int maxRetries = 200;
 	static double freeToCellMoveRatio = 5;
 	static double netToOverlapCostFact = 1000;
 	

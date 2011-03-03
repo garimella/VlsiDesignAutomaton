@@ -107,6 +107,8 @@ public class Row {
 		return overlap;
  	}
 
+	
+	
 	/**
 	 * Returns the incremental overlap when module1 is replace by
 	 * module2
@@ -116,30 +118,35 @@ public class Row {
 	 * @return the incremental overlap
 	 */
 	public static int incrementalOverlap(Module module1, Module module2){
-		if (module1.row.yPos == module2.row.yPos) {
-			int start = Config.min(module1.binInRow, module2.binInRow);
-			int end = Config.max(module1.binInRow, module2.binInRow);
-			int maxlength = Config.max(
-					module1.numBins, module2.numBins);
-			
-			int initialOverlap = 0;
-			
-			for (int i = start; i < end + maxlength; i++) {
-				int binOverlap = module1.row.bins.get(i).overlapAmount ;
-				initialOverlap += binOverlap > 0 ? binOverlap : 0;
-			}
-			swapCellWithCell(module1, module2);
-			
-			int finalOverlap = 0;
-			for (int i = start; i < end; i++) {
-				int binOverlap = module1.row.bins.get(i).overlapAmount ;
-				finalOverlap += binOverlap > 0 ? binOverlap : 0;
-			}
-			swapCellWithCell(module1, module2);
-			
-			return finalOverlap - initialOverlap;
-		}
 		
+		int m1s = module1.binInRow;
+		int m2s = module2.binInRow;
+		int m1e = module1.binInRow+module1.numBins-1;
+		int m2e = module2.binInRow+module2.numBins-1;
+		if((module1.row == module2.row)){
+			int minStart = Config.min(m1s, m2s);
+			int maxLength = Config.max(module1.numBins,	module2.numBins);
+			int maxStart = Config.max(m1s, m2s);
+			int maxEnd = Config.min(maxStart+maxLength, Row.totalBinsInRow); // Overcount. But who cares
+			int origOverlap = 0, newOverlap = 0;
+			for(int b = minStart; b < maxEnd; b++){
+				if(module1.row.bins.get(b).overlapAmount > 0){
+					origOverlap += module1.row.bins.get(b).overlapAmount;
+				}				
+			}
+			swapCellWithCellWithoutFreeBinUpdate(module1, module2);
+			for(int b = minStart; b < maxEnd; b++){
+				if(module1.row.bins.get(b).overlapAmount > 0){
+					newOverlap += module1.row.bins.get(b).overlapAmount;
+				}				
+			}	
+			swapCellWithCellWithoutFreeBinUpdate(module1, module2);
+			
+			return (newOverlap - origOverlap);
+		}
+	
+		
+			
 		int increaseInModule1RowOverlap = 0;
 		int reductionInModule1RowOverlap = 0;
 		int increaseInModule2RowOverlap = 0;
@@ -194,6 +201,30 @@ public class Row {
 	 */
 	public static int incrementalOverlapSwapFree(Module module, 
 			Row row, int freeBinIndex) {		
+		if((module.row == row)){
+			int m1s = module.binInRow;
+			int m2s = row.freeBins.get(freeBinIndex);
+			int minStart = Config.min(m1s, m2s);
+			int maxLength = module.numBins;
+			int maxStart = Config.max(m1s, m2s);
+			int maxEnd = Config.min(maxStart+maxLength, Row.totalBinsInRow); // Overcount. But who cares
+			int origOverlap = 0, newOverlap = 0;
+			for(int b = minStart; b < maxEnd; b++){
+				if(module.row.bins.get(b).overlapAmount > 0){
+					origOverlap += module.row.bins.get(b).overlapAmount;
+				}				
+			}
+			swapWithFreeBinWithoutUpdateFreeBins(module, row, freeBinIndex);
+			for(int b = minStart; b < maxEnd; b++){
+				if(module.row.bins.get(b).overlapAmount > 0){
+					newOverlap += module.row.bins.get(b).overlapAmount;
+				}				
+			}	
+			swapWithFreeBinWithoutUpdateFreeBins(module, row, freeBinIndex);
+			
+			return (newOverlap - origOverlap);
+		}
+	
 		int overlap = 0;
 		int fb = row.freeBins.get(freeBinIndex);
 		int reductionInModuleRowOverlap = 0;
@@ -216,24 +247,6 @@ public class Row {
 		return overlap;
 	}
 	
-	public static void _swapCellWithCell(Module m1, Module m2){
-		int m2LastBin = m2.binInRow+m2.numBins - 1;
-		int m1LastBin = m1.binInRow+m1.numBins - 1;
-		
-		for(int b = m1.binInRow;b < m1LastBin; b++){
-			m1.row.bins.get(b).removeFromBin();
-		}
-		for(int b = m2.binInRow;b < m2LastBin; b++){
-			m2.row.bins.get(b).removeFromBin();
-		}
-		for(int b = m2.binInRow;b < m2.binInRow+m1.numBins-1 ; b++){
-			m2.row.bins.get(b).addToBin();
-		}
-		for(int b = m1.binInRow;b < m1.binInRow+m2.numBins-1 ; b++){
-			m1.row.bins.get(b).addToBin();
-		}
-		// Don't handle freeBins now.
-	}
 	
 	/**
 	 * Swaps a cell with another cell.
@@ -259,6 +272,28 @@ public class Row {
 		// Remove all orphans of m2 away
 		for(int b = m2.binInRow+m1.numBins; b < m2.binInRow+m2.numBins;b++){
 			m2.row.removeFromBinAndUpdateFreeBins(b);
+		}
+		_swap(m1, m2);
+	}
+	public static void swapCellWithCellWithoutFreeBinUpdate(Module m1, Module m2) {				
+		// Move all extras added by m2 away
+		for(int b = m1.binInRow+m1.numBins; b < m1.binInRow+m2.numBins;b++){
+			m1.row.bins.get(b).addToBin();
+		}
+		
+		// Move all extras added by m1 away
+		for(int b = m2.binInRow+m2.numBins; b < m2.binInRow+m1.numBins;b++){
+			m2.row.bins.get(b).addToBin();
+		}
+		
+		// Remove all orphans of m1 away
+		for(int b = m1.binInRow+m2.numBins; b < m1.binInRow+m1.numBins;b++){
+			m2.row.bins.get(b).removeFromBin();
+		}
+		
+		// Remove all orphans of m2 away
+		for(int b = m2.binInRow+m1.numBins; b < m2.binInRow+m2.numBins;b++){
+			m2.row.bins.get(b).removeFromBin();
 		}
 		_swap(m1, m2);
 	}
@@ -295,7 +330,29 @@ public class Row {
 		// set the module's position to the new row's free bin
 		module.setPosition(row, freeBinIndexInRow);
 	}
-	
+	static void swapWithFreeBinWithoutUpdateFreeBins(Module module, Row row, 
+			int freeBinIndex){
+		
+		// fix all the bin values
+		int freeBinIndexInRow = row.freeBins.get(freeBinIndex);
+		for (int i = 0; i < module.numBins; i ++) {
+			if (module.binInRow + i < totalBinsInRow) {
+				module.row.bins.get(module.binInRow+i).removeFromBin();
+			}			
+			else 
+				assert(false);
+			
+			if (freeBinIndexInRow  + i < totalBinsInRow) {
+				module.row.bins.get(freeBinIndexInRow  + i).addToBin();
+			}
+			else 
+				assert(false);
+		}
+		
+		// set the module's position to the new row's free bin
+		module.setPosition(row, freeBinIndexInRow);
+	}
+
 	/**
 	 * Internal routine which does swapping of some crucial fields
 	 * @param m1

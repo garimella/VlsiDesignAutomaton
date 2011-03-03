@@ -133,13 +133,13 @@ public class Chip {
 	public void placeCellsRandomly(){
 		for (Map.Entry<String, Module> cellEntryList  : Module.cellList.entrySet()) {
 			// choose a random row
-			int row = (int)(Math.random() * (rows.size() - 1));
+			int row = (int)Math.round((Math.random() * (rows.size() - 1)));
 			Module module = cellEntryList.getValue();
 			module.numBins = (int)Math.ceil(module.width / Config.binWidth);
 			// choose a random bin in that
-			int randBin = (int)(Math.random() * (Row.totalBinsInRow - 1));
+			int randBin = (int)Math.round(Math.random() * (Row.totalBinsInRow - 1));
 			while(Row.totalBinsInRow -randBin < module.numBins){
-				randBin = (int)(Math.random() * (Row.totalBinsInRow - 1));
+				randBin = (int)Math.round(Math.random() * (Row.totalBinsInRow - 1));
 			}			
 			module.setPosition(rows.get(row), randBin);
 			rows.get(row).addCell(module);
