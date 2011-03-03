@@ -15,4 +15,12 @@ public class Config {
 	static int M = 500;
 	static double freeToCellMoveRatio = 5;
 	static double netToOverlapCostFact = 1000;
+	
+	static int max(int i, int j) {
+		return i > j ? i : j;
+	}
+	
+	static int min(int i, int j) {
+		return i < j ? i : j;
+	}
 }

@@ -60,9 +60,6 @@ public class SimAnneal {
 	
 	double calcCellMoveCost(Module moveSource, Module moveDest) {
 		currDiffOverlapCost = Row.incrementalOverlap(moveSource, moveDest);
-//		currDiffOverlapCost = Row
-//				.incrementalOverlapPartial(moveSource, moveDest)
-//				+ Row.incrementalOverlapPartial(moveDest, moveSource);
 		double oldPartialCost = cost(moveSource) + cost(moveDest);
 
 		_swap(moveSource, moveDest);
@@ -161,98 +158,126 @@ public class SimAnneal {
 		while(t > Config.tEnd){
 			acceptCount=0;
 			rejectCount=0;
-			for (int j=0; j < Config.M; j = j+Config.innerConditionUpdate) {
+			for (int j = 0; j < Config.M; j = j + Config.innerConditionUpdate) {
 				boolean wasPadMove;
 				double diffCost;
-				Module chosen1, chosen2=null;
+				Module chosen1, chosen2 = null;
 				Row randRow = null;
-				int freeBinIndex =  0;
+				int freeBinIndex = 0;
 				double selectPadOrCell = Math.random();
-//				selectPadOrCell = cellRatio/2;
+				// selectPadOrCell = cellRatio/2;
 				boolean wasCellToCellMove = false;
 				if (selectPadOrCell < cellRatio) {
 					wasPadMove = false;
-					// choose with probability a cell with module 
+					// choose with probability a cell with module
 					// or free bin
-					chosen1 = Module.cellList.get(
-							Module.cellKeyList[(int) (Math.random()*(Module.cellKeyList.length - 1))]);
-					
-					if(selectPadOrCell < cellRatio/3){
+					chosen1 = Module.cellList
+							.get(Module.cellKeyList[(int) (Math.random() * (Module.cellKeyList.length - 1))]);
+
+					if (selectPadOrCell < cellRatio / 3) {
 						// cell to cell move
-						chosen2 = Module.cellList.get(Module.cellKeyList[(int) (Math.random()*(Module.cellKeyList.length - 1))]);
-						if((Row.totalBinsInRow - chosen2.binInRow < chosen1.numBins)
-							|| (Row.totalBinsInRow - chosen1.binInRow < chosen2.numBins)){
+						chosen2 = Module.cellList
+								.get(Module.cellKeyList[(int) (Math.random() * (Module.cellKeyList.length - 1))]);
+						if ((Row.totalBinsInRow - chosen2.binInRow < chosen1.numBins)
+								|| (Row.totalBinsInRow - chosen1.binInRow < chosen2.numBins)) {
 							continue; // Don't allow overflows
-						}
-						else {
+						} else {
 							diffCost = calcCellMoveCost(chosen1, chosen2);
-							wasCellToCellMove =  true;
+							wasCellToCellMove = true;
 						}
-					}
-					else {
+					} else {
 						wasCellToCellMove = false;
 						// cell to free bin
-						int randRowIndex = (int) (Math.random()*(c.rows.size() -1));
-						randRow  = c.rows.get(randRowIndex);
+						int randRowIndex = (int) (Math.random() * (c.rows
+								.size() - 1));
+						randRow = c.rows.get(randRowIndex);
 						while ((randRow.freeBins.size() < 1) || (chosen1.row == randRow)) {
-						//while ((randRow.freeBins.size() < 1)) {
+							// while ((randRow.freeBins.size() < 1)) {
 							randRowIndex = (int) (Math.random() * (c.rows
 									.size() - 1));
 							randRow = c.rows.get(randRowIndex);
 						}
-						freeBinIndex = (int) (Math.random() * (randRow.freeBins.size() - 1));
-						if(chosen1.numBins > Row.totalBinsInRow - randRow.freeBins.get(freeBinIndex)){
+						freeBinIndex = (int) (Math.random() * (randRow.freeBins
+								.size() - 1));
+						if (chosen1.numBins > Row.totalBinsInRow
+								- randRow.freeBins.get(freeBinIndex)) {
 							continue;
+						} else {
+							diffCost = calcCellToFreeMoveCost(chosen1, randRow,
+									freeBinIndex);
 						}
-						else {
-							diffCost = calcCellToFreeMoveCost(chosen1, randRow, freeBinIndex);
-						}
-					}					
-				} else {
-					chosen1 = Module.padList.get(Module.padKeyList[(int) (Math.random()*Module.padKeyList.length)]);
-					chosen2 = Module.padList.get(Module.padKeyList[(int) (Math.random()*Module.padKeyList.length)]);
+					}
+			}
+			else {
+					chosen1 = Module.padList.get(Module.padKeyList[(int) (Math
+							.random() * Module.padKeyList.length)]);
+					chosen2 = Module.padList.get(Module.padKeyList[(int) (Math
+							.random() * Module.padKeyList.length)]);
 					wasPadMove = true;
 					diffCost = calcPadMoveCost(chosen1, chosen2);
 				}
-								
-				if(accept(diffCost, t)){
-					acceptCount++;					
+
+				if (accept(diffCost, t)) {
+					acceptCount++;
 					totalNetCost += currDiffNetCost;
-					if(acceptCount%100==0) {
-//						System.out.println("[Internal] totOverlapCost=" + totalOverlapCost);
-//						System.out.println("[Internal] currDiffCost=" + currDiffOverlapCost);
+					if (acceptCount % 100 == 0) {
+						// System.out.println("[Internal] totOverlapCost=" +
+						// totalOverlapCost);
+						// System.out.println("[Internal] currDiffCost=" +
+						// currDiffOverlapCost);
 					}
-					totalOverlapCost += currDiffOverlapCost;			
-					if(wasPadMove){
-						makePadMove(chosen1, chosen2);						
-					}				
-					else {
-						if(wasCellToCellMove) {
+					totalOverlapCost += currDiffOverlapCost;
+					if (wasPadMove) {
+						makePadMove(chosen1, chosen2);
+					} else {
+						if (wasCellToCellMove) {
 							makeCellMove(chosen1, chosen2);
-							if(acceptCount%100==0) {
-								
+							if (acceptCount % 100 == 0) {
+
 							}
-						}
-						else { 
+						} else {
 							makeCellToFreeMove(chosen1, randRow, freeBinIndex);
 							;
 						}
+					}
+					if (totalOverlapCost != initialOverlapCost()) {
+						System.out.println("wasPadMove = " + wasPadMove
+								+ " was cell to cell move = "
+								+ wasCellToCellMove);
+						System.out.println("Net Cost = " + totalNetCost
+								+ "; Overlap Cost = " + totalOverlapCost);
+						System.out.println("Calculated overlap cost ="
+								+ initialOverlapCost());
+						System.out.println("accept count = " + acceptCount);
+						if (wasCellToCellMove)
+							System.out.println(chosen1.row.yPos + " "
+									+ chosen2.row.yPos);
+						else
+							System.out.println(chosen1.row.yPos + " "
+									+ randRow.yPos + " - " + freeBinIndex);
+
+						System.exit(1);
 					}
 				} else {
 					rejectCount++;
 				}
 			}
-			//System.out.println("Acceptance Ratio:" + ((double)acceptCount/(acceptCount+rejectCount)));
+			// System.out.println("Acceptance Ratio:" +
+			// ((double)acceptCount/(acceptCount+rejectCount)));
 			t = update(t);
 		}
-		System.out.println("Total Net Cost = " + totalNetCost+ " total overlap cost = " + totalOverlapCost);
-		System.out.println("Computed After: Cost Net = " + initialNetCost() + "Overlap = " + initialOverlapCost() );
-		System.out.println("AFTER: Net Cost = " +  totalNetCost + "; Overlap Cost = " + totalOverlapCost);
+		System.out.println("Total Net Cost = " + totalNetCost
+				+ " total overlap cost = " + totalOverlapCost);
+		System.out.println("Computed After: Cost Net = " + initialNetCost()
+				+ "Overlap = " + initialOverlapCost());
+		System.out.println("AFTER: Net Cost = " + totalNetCost
+				+ "; Overlap Cost = " + totalOverlapCost);
 	}
 	
 	private void makeCellMove(Module m1, Module m2) {
 		Row.swapCellWithCell(m1, m2);
 	}
+	
 	private void makeCellToFreeMove(Module m, Row r, int freeBinIndex){
 		Row.swapWithFreeBin(m, r, freeBinIndex);
 	}
