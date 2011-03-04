@@ -28,7 +28,7 @@ public class Chip {
 		
 		// Create the rows and set the parameters of the rows
 		Row.width = width;
-		Row.totalBinsInRow = (int) Math.ceil(width/Config.binWidth);
+		Row.totalBinsInRow = (int) Math.ceil(width/Config.binWidth) + Config.numExtraBins;
 		rows = new Vector<Row>();
 		for (int i = 0;i < (int) (height/40.0);i++) {			
 			rows.add(new Row(40.0*i));

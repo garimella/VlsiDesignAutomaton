@@ -113,7 +113,17 @@ public class Row {
 		}	
 		return overlap;
  	}
-
+	
+	public int numFreeAtEnd(){
+		int freeCount = 0;
+		for(int i = totalBinsInRow - 1; i > totalBinsInRow - Config.numExtraBins; i--){
+			if(bins.get(i).isFree())
+				freeCount++;
+			else
+				break;
+		}
+		return freeCount;
+	}
 	
 	/**
 	 * Returns the incremental overlap when module1 is replace by
@@ -127,8 +137,8 @@ public class Row {
 		
 		int m1s = module1.binInRow;
 		int m2s = module2.binInRow;
-		int m1e = module1.binInRow+module1.numBins-1;
-		int m2e = module2.binInRow+module2.numBins-1;
+//		int m1e = module1.binInRow+module1.numBins-1;
+//		int m2e = module2.binInRow+module2.numBins-1;
 		if((module1.row == module2.row)){
 			int minStart = Config.min(m1s, m2s);
 			int maxLength = Config.max(module1.numBins,	module2.numBins);

@@ -7,8 +7,8 @@ public class Main {
 		try {
 			// The filename of the test-bench
 			//final String filename = "input/test1";
-			final String netListFile = "input/ibm05.net";
-			final String areaListFile = "input/ibm05.are";
+			final String netListFile = "input/ibm01.net";
+			final String areaListFile = "input/ibm01.are";
 
 			// parsing and printing the netlist statistics for verification
 			ckt.parseNetList(netListFile);
@@ -20,15 +20,22 @@ public class Main {
 			chip.setArea(ckt.getTotalArea());
 			chip.placePads();
 			chip.placeCellsRandomly();
-			chip.dumpChipPlacements("ibm05_orig.bbb");
+			chip.dumpChipPlacements("ibm01_orig.bbb");
 //			if (chip.circuit.getVertexCount() < 100) {
 //				chip.viewNetList();
 //			}
-
+			System.out.println("initial row width =" + Row.width);
 			// next run the simulated annealing algorithm
 			SimAnneal simAnneal = new SimAnneal(chip, ckt);
+			
 			simAnneal.simAnneal();
-			chip.dumpChipPlacements("ibm05.bbb");
+			int totalExtraRowWidth = 0;
+			for(Row r: chip.rows) {
+				totalExtraRowWidth += r.numFreeAtEnd();
+			}
+			System.out.println("average row width =" + (Row.width + ((double)totalExtraRowWidth/chip.rows.size())));
+			
+			chip.dumpChipPlacements("ibm01.bbb");
 		} catch (Exception e) {
 			System.err.println(e.getCause());
 			e.printStackTrace();

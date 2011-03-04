@@ -5,7 +5,8 @@ public class SimAnneal {
 	Circuit ckt;
 	double totalNetCost;
 	int totalOverlapCost;
-	
+	double tStart;
+	double t;
 	double initialNetCost(){
 		double totalCost = 0;
 		for(Net n : ckt.circuit.getEdges()){
@@ -46,8 +47,8 @@ public class SimAnneal {
 		double changedNetCost = netCost;
 		double changedOverlapCost = overlapCost * Config.binWidth; 
 		 
-		double penalty = Config.beta*(changedNetCost/Config.netToOverlapCostFact) 
-			+ (1-Config.beta)*(changedOverlapCost);
+		double penalty = Config.beta(t, tStart)*(changedNetCost/Config.netToOverlapCostFact) 
+			+ (1-Config.beta(t,tStart))*(changedOverlapCost);
 		//System.out.println("The penalty = " + penalty + " total overlap = " + totalOverlapCost);
 		return penalty;
 	}
@@ -150,17 +151,19 @@ public class SimAnneal {
 	}
 	
 	public void simAnneal(){
-		double t = Config.tStart;
+		tStart = Config.tStart(ckt.circuit.getVertexCount());
+		t = tStart;
 		int acceptCount = 0;
 		int rejectCount = 0;
 		
 		// TODO: make it a function of t
+		 //double windowHeight = (c.rows.size())*40;
 		double windowHeight = (c.rows.size()/4) * 40 * Math.log10(10 * t);
 		//double windowHeight = 40 * 10 ;
-		double windowWidth = 0;
+//		double windowWidth = 0;
 		// Fix stopping and innerLoop conditions
 		System.out.println("BEFORE: Net Cost = " +  totalNetCost + "; Overlap Cost = " + totalOverlapCost);
-		while(t > Config.tEnd){
+		while(true){
 			acceptCount=0;
 			rejectCount=0;
 			innerLoop:
@@ -269,9 +272,13 @@ public class SimAnneal {
 					rejectCount++;
 				}
 			}
-			System.out.println("Acceptance Ratio:" +
-			((double)acceptCount/(acceptCount+rejectCount)) + "; t = " + t);
-			t = update(t);
+			double acceptRatio = ((double)acceptCount/(acceptCount+rejectCount));
+//			System.out.println("Acceptance Ratio:" + acceptRatio + "; t = " + t ) ;
+			if(acceptRatio<0.005){
+				break;
+			}
+			
+			t = update();
 			windowHeight = (c.rows.size()/5) * 40 * Math.log10(10 * t);
 		}
 		
@@ -295,16 +302,19 @@ public class SimAnneal {
 		Chip.padSwap(p1,p2);
 	}
 
-	private double update(double t) {
-		return Config.alpha(t)*t; // Update value of alpha instead of using a function...
+	private double update() {
+		return Config.alpha(t, tStart)*t; // Update value of alpha instead of using a function...
 	}
-	private boolean accept(double diffCost, double t) {
-		double y = min(1,Math.pow(Math.E, -diffCost/t));
+	private boolean accept(double diffCost, double t) {		
+		
+		double y = min(1,Math.pow(Math.E, -(Config.penaltyWeight(ckt.circuit.getVertexCount())*diffCost)/t));
 		double r = Math.random();
 //		System.out.println("Choosing between " + y + "\t" + r + "for "
 //				+ "given diff=" + diffCost);
 		if(r < y){			
+//			System.out.println("; diffCost = " + diffCost); 
 			return true;
+			
 		}
 		else {
 			//System.out.println(" rejected");
