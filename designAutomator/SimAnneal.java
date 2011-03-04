@@ -44,10 +44,10 @@ public class SimAnneal {
 
 	double penaltyFunction(double netCost, double overlapCost){
 		// Reweight overlapCost and netCost to be in comparable order.
-		double changedNetCost = netCost;
+		double changedNetCost = netCost/Config.netToOverlapCostFact;
 		double changedOverlapCost = overlapCost * Config.binWidth; 
 		 
-		double penalty = Config.beta(t, tStart)*(changedNetCost/Config.netToOverlapCostFact) 
+		double penalty = Config.beta(t, tStart)*(changedNetCost) 
 			+ (1-Config.beta(t,tStart))*(changedOverlapCost);
 		//System.out.println("The penalty = " + penalty + " total overlap = " + totalOverlapCost);
 		return penalty;
@@ -156,9 +156,11 @@ public class SimAnneal {
 		int acceptCount = 0;
 		int rejectCount = 0;
 		
+		Config.setM(ckt.circuit.getVertexCount()*2);
+		
 		// TODO: make it a function of t
 		 //double windowHeight = (c.rows.size())*40;
-		double windowHeight = (c.rows.size()/4) * 40 * Math.log10(10 * t);
+		double windowHeight = (c.rows.size()/4) * 40 * Math.log10(t);
 		//double windowHeight = 40 * 10 ;
 //		double windowWidth = 0;
 		// Fix stopping and innerLoop conditions
@@ -193,12 +195,6 @@ public class SimAnneal {
 							randRowIndex = 0;
 						randRow = c.rows.get((int)(randRowIndex/40.0));
 						chosen2 = randRow.moduleList.get((int)Math.round((randRow.moduleList.size() - 1)* Math.random()));
-//						chosen2 = Module.cellList
-//								.get(Module.cellKeyList[(int) (Math.random() * (Module.cellKeyList.length - 1))]);
-//						while (chosen1.row == chosen2.row) {
-//							chosen2 = Module.cellList
-//							.get(Module.cellKeyList[(int) (Math.random() * (Module.cellKeyList.length - 1))]);
-//						}
 						if ((Row.totalBinsInRow - chosen2.binInRow < chosen1.numBins)
 								|| (Row.totalBinsInRow - chosen1.binInRow < chosen2.numBins)) {
 							continue; // Don't allow overflows
@@ -218,7 +214,6 @@ public class SimAnneal {
 								continue innerLoop;
 							}
 							else {
-						// while ((randRow.freeBins.size() < 1)) {			
 								randRowIndex = (int) Math.round(Math.random() * (c.rows
 										.size() - 1));
 								randRow = c.rows.get(randRowIndex);
@@ -272,9 +267,12 @@ public class SimAnneal {
 					rejectCount++;
 				}
 			}
-			double acceptRatio = ((double)acceptCount/(acceptCount+rejectCount));
-//			System.out.println("Acceptance Ratio:" + acceptRatio + "; t = " + t ) ;
-			if(acceptRatio<0.005){
+			acceptRatio = ((double)acceptCount/(acceptCount+rejectCount));
+			System.out.println("Acceptance Ratio:" + acceptRatio + "; t = " + t +
+					" prob = " + probAccepts + " deterministic = " + realAccepts);
+			probAccepts = 0;
+			realAccepts = 0;
+			if(acceptRatio<0.05){
 				break;
 			}
 			
@@ -305,21 +303,32 @@ public class SimAnneal {
 	private double update() {
 		return Config.alpha(t, tStart)*t; // Update value of alpha instead of using a function...
 	}
+	
+	int realAccepts = 0, probAccepts = 0;
+	double acceptRatio=1;
 	private boolean accept(double diffCost, double t) {		
+		if(diffCost <= 0){
+			
+			realAccepts ++;
+			return true;
+		}
 		
-		double y = min(1,Math.pow(Math.E, -(Config.penaltyWeight(ckt.circuit.getVertexCount())*diffCost)/t));
+		double y = min(Math.sqrt(t/tStart),Math.pow(Math.E, -(Config.penaltyWeight(c, acceptRatio)*diffCost)/t));
+		
+			
 		double r = Math.random();
 //		System.out.println("Choosing between " + y + "\t" + r + "for "
 //				+ "given diff=" + diffCost);
-		if(r < y){			
-//			System.out.println("; diffCost = " + diffCost); 
+		if(r < y){
+			//if(y < 0.75) System.out.println("Wow! : "+y);
+			probAccepts++;
 			return true;
+		}
+		return false;
+//			System.out.println("; diffCost = " + diffCost); 
 			
-		}
-		else {
-			//System.out.println(" rejected");
-			return false;
-		}
+			
+		
 	}
 	private double min(double d1, double d2) {
 		return (d1 < d2)?d1:d2;
