@@ -1,11 +1,14 @@
 package designAutomator;
 
+
 public class Main {
 	public static void main(String args[]) {
+		long time1= System.currentTimeMillis();
+		
 		Circuit ckt = new Circuit();
 		Chip chip = new Chip();
 		try {
-			String benchmarkname = "ibm01";
+			String benchmarkname = args[0];
 			// The filename of the test-bench
 			//final String filename = "input/test1";
 			final String netListFile = "input/" + benchmarkname + ".net";
@@ -41,5 +44,7 @@ public class Main {
 			System.err.println(e.getCause());
 			e.printStackTrace();
 		}
+		long time2= System.currentTimeMillis();
+		System.out.println("millsecs elapsed:"+(time2-time1));
 	}
 }

@@ -156,11 +156,11 @@ public class SimAnneal {
 		int acceptCount = 0;
 		int rejectCount = 0;
 		
-		Config.setM(ckt.circuit.getVertexCount()*2);
+		Config.setM((int)Math.pow(ckt.circuit.getVertexCount(), 1.1));
 		
 		// TODO: make it a function of t
 		 //double windowHeight = (c.rows.size())*40;
-		double windowHeight = (c.rows.size()/4) * 40 * Math.log10(t);
+		double windowHeight = (c.rows.size() / 4) * 40 * Math.log10(t);
 		//double windowHeight = 40 * 10 ;
 //		double windowWidth = 0;
 		// Fix stopping and innerLoop conditions
@@ -194,6 +194,9 @@ public class SimAnneal {
 						if (randRowIndex < 0)
 							randRowIndex = 0;
 						randRow = c.rows.get((int)(randRowIndex/40.0));
+						
+						if (randRow.moduleList.isEmpty())
+							continue;
 						chosen2 = randRow.moduleList.get((int)Math.round((randRow.moduleList.size() - 1)* Math.random()));
 						if ((Row.totalBinsInRow - chosen2.binInRow < chosen1.numBins)
 								|| (Row.totalBinsInRow - chosen1.binInRow < chosen2.numBins)) {
@@ -203,8 +206,8 @@ public class SimAnneal {
 							wasCellToCellMove = true;
 						}
 					} else {
-						wasCellToCellMove = false;
 						// cell to free bin
+						wasCellToCellMove = false;
 						int randRowIndex = (int) Math.round((Math.random() * (c.rows
 								.size() - 1)));
 						randRow = c.rows.get(randRowIndex);
@@ -268,8 +271,8 @@ public class SimAnneal {
 				}
 			}
 			acceptRatio = ((double)acceptCount/(acceptCount+rejectCount));
-			System.out.println("Acceptance Ratio:" + acceptRatio + "; t = " + t +
-					" prob = " + probAccepts + " deterministic = " + realAccepts);
+			//System.out.println("Acceptance Ratio:" + acceptRatio + "; t = " + t +
+			//		" prob = " + probAccepts + " deterministic = " + realAccepts);
 			probAccepts = 0;
 			realAccepts = 0;
 			if(acceptRatio<0.05){
@@ -277,7 +280,8 @@ public class SimAnneal {
 			}
 			
 			t = update();
-			windowHeight = (c.rows.size()/5) * 40 * Math.log10(10 * t);
+			//windowHeight = (c.rows.size() / 4) * 40 * Math.log10(10 * t);
+			windowHeight = (c.rows.size() / 4) * 40;
 		}
 		
 		System.out.println("Total Net Cost = " + totalNetCost
@@ -314,8 +318,9 @@ public class SimAnneal {
 		}
 		
 		double y = min(Math.sqrt(t/tStart),Math.pow(Math.E, -(Config.penaltyWeight(c, acceptRatio)*diffCost)/t));
+		//double y = min(1, Math.pow(Math.E, -((ckt.circuit.getVertexCount()) * diffCost)/(10* t)));
 		
-			
+		
 		double r = Math.random();
 //		System.out.println("Choosing between " + y + "\t" + r + "for "
 //				+ "given diff=" + diffCost);

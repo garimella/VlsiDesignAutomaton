@@ -3,21 +3,28 @@ package designAutomator;
 public class Config {
 	// TODO: tStart = number of blocks
 	
+	static double tStart = 0;
 	static double tStart(int numBlocks){
-		return numBlocks;
+		tStart = 2 * Math.pow(numBlocks, 2);
+		return tStart;
 	}	
+	
+	static double tStart() {
+		return tStart;
+	}
+	
 	static double tEnd = .001f;
 	static double binWidth = 5;
 	// TODO: make it a good function
 	static double alpha(double t, double tS){
-		if(t > 2*t/3){
-			return 0.95;
+		if(t > 0.6 * tS){
+			return 0.90;
 		}
-		else if(t > t/5){
+		else if(t > 0.2 * tS){
 			return 0.99;
 		}
 		else{
-			return 0.95;
+			return 0.90;
 		}
 	}
 	static double penaltyWeight(Chip c, double acceptRatio){
@@ -26,11 +33,11 @@ public class Config {
 	// based on temperature
 	//static double beta = 0.8f;
 	static double beta(double t, double tS){
-		if(t > 0.1*tS){
-			return 0.9;
+		if(t > 0.1 * tS){
+			return 0.7;
 		}
 		else {
-			return 0.5;
+			return 0.6;
 		}
 	}
 	static int innerConditionUpdate = 1;
@@ -40,7 +47,7 @@ public class Config {
 	}
 	static int maxRetries = 200;
 	static double freeToCellMoveRatio = 5;
-	static double netToOverlapCostFact = 200;
+	static double netToOverlapCostFact = 100;
 	public static int numExtraBins = 8;
 	
 	static int max(int i, int j) {
