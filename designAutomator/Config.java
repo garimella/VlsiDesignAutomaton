@@ -5,7 +5,7 @@ public class Config {
 	
 	static double tStart = 0;
 	static double tStart(int numBlocks){
-		tStart = 2 * Math.pow(numBlocks, 2);
+		tStart = Math.pow(numBlocks, 2);
 		return tStart;
 	}	
 	
@@ -17,16 +17,31 @@ public class Config {
 	static double binWidth = 5;
 	// TODO: make it a good function
 	static double alpha(double t, double tS){
-		if(t > 0.6 * tS){
-			return 0.90;
-		}
-		else if(t > 0.2 * tS){
+		if (SimAnneal.acceptRatio > 0.6) {
+			return 0.85;
+		} else if (SimAnneal.acceptRatio > 0.3) {
 			return 0.99;
 		}
-		else{
+		else
 			return 0.90;
-		}
+//		if(t > 0.6 * tS){
+//			return 0.90;
+//		}
+//		else if(t > 0.2 * tS){
+//			return 0.99;
+//		}
+//		else{
+//			return 0.90;
+//		}
 	}
+	
+	// netcost
+	static double beta1 = 30;
+	// overlaps
+	static double beta2 = 500;
+	// Row-width
+	static double beta3 = 5000;
+	
 	static double penaltyWeight(Chip c, double acceptRatio){
 		return 1;
 	}

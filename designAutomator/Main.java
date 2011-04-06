@@ -8,7 +8,8 @@ public class Main {
 		Circuit ckt = new Circuit();
 		Chip chip = new Chip();
 		try {
-			String benchmarkname = args[0];
+			//String benchmarkname = args[0];
+			String benchmarkname = "ibm13";
 			// The filename of the test-bench
 			//final String filename = "input/test1";
 			final String netListFile = "input/" + benchmarkname + ".net";
@@ -39,6 +40,11 @@ public class Main {
 			}
 			System.out.println("average row width =" + (Row.width + ((double)totalExtraRowWidth/chip.rows.size())));
 			
+//			Legalizer legalizer = new Legalizer(chip, ckt);
+//			legalizer.legalize();
+//			
+//			System.out.println("Final net cost after legalization = " +simAnneal.initialNetCost());
+//			
 			chip.dumpChipPlacements("result/" + benchmarkname + ".bbb");
 		} catch (Exception e) {
 			System.err.println(e.getCause());

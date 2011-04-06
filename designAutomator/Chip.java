@@ -1,15 +1,20 @@
 package designAutomator;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Scanner;
 import java.util.Vector;
 
 public class Chip {
 	double area;
 	double height;
 	double width;
+	double maxModuleLen=0;
 	Vector<Row> rows;
 	
 	public double getArea() {
@@ -130,11 +135,20 @@ public class Chip {
 		}
 	}
 	
+	// TODO: home work for mr gautham
+	public void placeCellsDeterministically(){
+		
+	}
+	
 	public void placeCellsRandomly(){
 		for (Map.Entry<String, Module> cellEntryList  : Module.cellList.entrySet()) {
+			
 			// choose a random row
 			int row = (int)Math.round((Math.random() * (rows.size() - 1)));
 			Module module = cellEntryList.getValue();
+			if(module.width > maxModuleLen){
+				maxModuleLen = module.width;
+			}
 			module.numBins = (int)Math.ceil(module.width / Config.binWidth);
 			// choose a random bin in that
 			int randBin = (int)Math.round(Math.random() * (Row.totalBinsInRow - 1));
@@ -187,6 +201,47 @@ public class Chip {
 					+ Double.toString(modEntry.getValue().yPos) + "\n");
 			}
 			out.close();
+	    }
+		catch (Exception e){//Catch exception if any
+	      System.err.println("Error: " + e.getMessage());
+	    }
+	}
+	
+	public void readChipPlacements(String fileName){
+		try
+		{
+			File file = new File(fileName);
+			Scanner scanner = new Scanner(file);
+			
+			// width
+			scanner.nextDouble();
+			// height
+			scanner.nextDouble();
+			
+			int totalModules = scanner.nextInt();
+			
+			for(Entry<String, Module> modEntry: Module.cellList.entrySet()){
+				// width
+				modEntry.getValue().width = scanner.nextDouble();
+				//height
+				scanner.nextDouble();
+				scanner.next();
+			}
+			
+//			for(Entry<String, Module> modEntry: Module.padList.entrySet()){
+//				out.write(Double.toString(modEntry.getValue().width) + " " 
+//					+ Double.toString(Module.HEIGHT) + " " + modEntry.getValue().name + "\n");
+//			}
+//			out.write("\n");
+//			for(Entry<String, Module> modEntry: Module.cellList.entrySet()){
+//				out.write(Double.toString(modEntry.getValue().xPos) + " " 
+//					+ Double.toString(modEntry.getValue().yPos) + "\n");
+//			}
+//			for(Entry<String, Module> modEntry: Module.padList.entrySet()){
+//				out.write(Double.toString(modEntry.getValue().xPos) + " " 
+//					+ Double.toString(modEntry.getValue().yPos) + "\n");
+//			}
+//			out.close();
 	    }
 		catch (Exception e){//Catch exception if any
 	      System.err.println("Error: " + e.getMessage());

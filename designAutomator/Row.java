@@ -35,6 +35,13 @@ public class Row {
 	ListOrderedSet<Module> moduleList;
 	
 	/**
+	 * Number of bins [including overlapped]
+	 */
+	int numBinsUsed;
+	
+	int numFreeBins;
+	
+	/**
 	 * Total number of bins in a row
 	 */
 	static int totalBinsInRow;
@@ -125,6 +132,20 @@ public class Row {
 		return freeCount;
 	}
 	
+	public static double diffRowWidth(Module module1, Module module2, double avg){
+		double origRW, newRW;
+		origRW = Math.abs(avg - module1.row.numBinsUsed) + Math.abs(avg - module2.row.numBinsUsed);
+		newRW = Math.abs(avg - (module1.row.numBinsUsed-module1.numBins+module2.numBins))
+				+ Math.abs(avg - (module2.row.numBinsUsed - module2.numBins + module1.numBins));
+		return newRW - origRW;
+	}
+	public static double diffRowWidthFree(Module module1, Row row, int freeBinIndex, double avg){
+		double origRW, newRW;
+		origRW = Math.abs(avg - module1.row.numBinsUsed) + Math.abs(avg - row.numBinsUsed);
+		newRW = Math.abs(avg - (module1.row.numBinsUsed-module1.numBins))
+				+ Math.abs(avg - (row.numBinsUsed + module1.numBins));
+		return newRW - origRW;
+	}
 	/**
 	 * Returns the incremental overlap when module1 is replace by
 	 * module2
@@ -217,6 +238,7 @@ public class Row {
 	 */
 	public static int incrementalOverlapSwapFree(Module module, 
 			Row row, int freeBinIndex) {		
+		
 		if((module.row == row)){
 			int m1s = module.binInRow;
 			int m2s = row.freeBins.get(freeBinIndex);
@@ -269,7 +291,12 @@ public class Row {
 	 * @param m1 cell 1
 	 * @param m2 cell 2
 	 */
-	public static void swapCellWithCell(Module m1, Module m2) {				
+	public static void swapCellWithCell(Module m1, Module m2) {			
+		m1.row.numBinsUsed += m2.numBins;
+		m1.row.numBinsUsed -= m1.numBins;
+		m2.row.numBinsUsed += m1.numBins;
+		m2.row.numBinsUsed -= m2.numBins;
+		
 		// Move all extras added by m2 away
 		for(int b = m1.binInRow+m1.numBins; b < m1.binInRow+m2.numBins;b++){
 			m1.row.addCellToBinAndUpdateFreeBins(b);
@@ -322,6 +349,8 @@ public class Row {
 	 */
 	static void swapWithFreeBin(Module module, Row row, 
 			int freeBinIndex){
+		module.row.numBinsUsed -= module.numBins;
+		row.numBinsUsed += module.numBins;
 		// The module should be a cell
 		assert(module.type == ModuleType.CELL);
 		

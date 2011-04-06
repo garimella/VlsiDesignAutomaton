@@ -259,7 +259,8 @@ public class Circuit {
 	public double getTotalArea() {
 		double totalArea = 0;
 		for(Map.Entry<String, Module> mod : Module.cellList.entrySet()){
-			totalArea += mod.getValue().width * Module.HEIGHT;
+			totalArea += Math.ceil((mod.getValue().width/Config.binWidth)) 
+				* Config.binWidth * Module.HEIGHT;
 		}
 	/*	System.out.println(totalArea);*/
 		return totalArea;

@@ -22,9 +22,26 @@ public class SimAnneal {
 		}
 		return initialOverlap;
 	}
-	
+	double initialCost, avgBinsPerRow;
+	int totBins;
+	void initialRowWidthCost() {
+		initialCost= 0;
+		totBins = 0;
+		for (Module m: Module.cellList.values()){
+			totBins += m.numBins;
+		}
+		avgBinsPerRow = ((double) totBins)/c.rows.size();
+		for(Row r: c.rows){
+			r.numBinsUsed = 0;
+			for (Module m: r.moduleList){
+				r.numBinsUsed += m.numBins;
+			}
+			initialCost += Math.abs(avgBinsPerRow - r.numBinsUsed);
+		}		
+	}
+		
 	private double costNet(Net n) {
-		double minXPos=0, minYPos=0, maxXPos=0, maxYPos=0;
+		double minXPos=c.width, minYPos = c.height, maxXPos=0, maxYPos=0;
 		for(String nameOfModule: ckt.circuit.getIncidentVertices(n)){
 			Module m;
 			m = Module.cellList.get(nameOfModule);
@@ -42,13 +59,13 @@ public class SimAnneal {
 		return ((maxXPos-minXPos) + (maxYPos - minYPos));
 	}
 
-	double penaltyFunction(double netCost, double overlapCost){
+	double penaltyFunction(double netCost, double overlapCost, double rowWidthCost){
 		// Reweight overlapCost and netCost to be in comparable order.
-		double changedNetCost = netCost/Config.netToOverlapCostFact;
-		double changedOverlapCost = overlapCost * Config.binWidth; 
-		 
-		double penalty = Config.beta(t, tStart)*(changedNetCost) 
-			+ (1-Config.beta(t,tStart))*(changedOverlapCost);
+		double scaledNetCost = netCost/(c.height+c.width);
+		double scaledOverlapCost = overlapCost/c.maxModuleLen; 
+		double scaledRowWidthCost = rowWidthCost/c.width;
+		double penalty = Config.beta1*(scaledNetCost) 
+			+ Config.beta2*(scaledOverlapCost) + Config.beta3*(scaledRowWidthCost);
 		//System.out.println("The penalty = " + penalty + " total overlap = " + totalOverlapCost);
 		return penalty;
 	}
@@ -68,8 +85,8 @@ public class SimAnneal {
 		_swap(moveDest, moveSource);
 		currDiffNetCost = newPartialCost - oldPartialCost;
 
-
-		return penaltyFunction(currDiffNetCost, currDiffOverlapCost);
+		double rowWidthCost = Row.diffRowWidth(moveSource, moveDest, avgBinsPerRow);
+		return penaltyFunction(currDiffNetCost, currDiffOverlapCost, rowWidthCost);
 	}
 	
 	double calcCellToFreeMoveCost(Module moveSource, Row row, int freeBinIndex) {
@@ -85,7 +102,8 @@ public class SimAnneal {
 		currDiffNetCost = newNetCost - oldNetCost;
 //		System.out.println("net diff = " + currDiffNetCost + 
 //				"overlap diff = " + currDiffOverlapCost);
-		return penaltyFunction(currDiffNetCost, currDiffOverlapCost);
+		double rowWidthCost = Row.diffRowWidthFree(moveSource, row, freeBinIndex, avgBinsPerRow);
+		return penaltyFunction(currDiffNetCost, currDiffOverlapCost, rowWidthCost);
 	}
 	
 	private void _swap(Module m1, Module m2) {
@@ -104,7 +122,7 @@ public class SimAnneal {
 		// Due to pad moves, ovelap will never change! (Kashyap)
 		// This is the bug which is causing random increase in overlap
 		currDiffOverlapCost = 0;
-		return penaltyFunction(currDiffNetCost, 0);
+		return penaltyFunction(currDiffNetCost, 0, 0);
 	}
 	
 	void makeMove(){
@@ -143,10 +161,11 @@ public class SimAnneal {
 	SimAnneal(Chip c, Circuit ckt){
 		this.c = c;
 		this.ckt = ckt;
-		cellRatio = 
+		cellRatio =
 			(double)Module.cellList.size() / (double)(Module.cellList.size() + Module.padList.size());
 		totalNetCost = initialNetCost();
 		totalOverlapCost = initialOverlapCost();
+		initialRowWidthCost(); 
 		//System.out.println("Total net cost = " + totalNetCost + " total Overlap cost =" + totalOverlapCost);
 	}
 	
@@ -156,10 +175,11 @@ public class SimAnneal {
 		int acceptCount = 0;
 		int rejectCount = 0;
 		
-		Config.setM((int)Math.pow(ckt.circuit.getVertexCount(), 1.1));
+		Config.setM((int)Math.pow(ckt.circuit.getVertexCount(), 1.0));
 		
 		// TODO: make it a function of t
 		 //double windowHeight = (c.rows.size())*40;
+		
 		double windowHeight = (c.rows.size() / 4) * 40 * Math.log10(t);
 		//double windowHeight = 40 * 10 ;
 //		double windowWidth = 0;
@@ -186,7 +206,7 @@ public class SimAnneal {
 					chosen1 = Module.cellList
 							.get(Module.cellKeyList[(int) (Math.random() * (Module.cellKeyList.length - 1))]);
 
-					if (selectPadOrCell < cellRatio / 3) {
+					if (selectPadOrCell < cellRatio / 5) {
 						// cell to cell move
 						double randRowIndex = chosen1.row.yPos - windowHeight/2 + Math.random() * windowHeight;
 						if (randRowIndex >= c.rows.size() * 40)
@@ -271,8 +291,8 @@ public class SimAnneal {
 				}
 			}
 			acceptRatio = ((double)acceptCount/(acceptCount+rejectCount));
-			//System.out.println("Acceptance Ratio:" + acceptRatio + "; t = " + t +
-			//		" prob = " + probAccepts + " deterministic = " + realAccepts);
+			System.out.println("Acceptance Ratio:" + acceptRatio + "; t = " + t +
+					" prob = " + probAccepts + " deterministic = " + realAccepts);
 			probAccepts = 0;
 			realAccepts = 0;
 			if(acceptRatio<0.05){
@@ -280,7 +300,7 @@ public class SimAnneal {
 			}
 			
 			t = update();
-			//windowHeight = (c.rows.size() / 4) * 40 * Math.log10(10 * t);
+			//windowHeight = (c.rows.size()) * 40 * (Math.log(1 + acceptRatio)/Math.log(2));
 			windowHeight = (c.rows.size() / 4) * 40;
 		}
 		
@@ -289,7 +309,7 @@ public class SimAnneal {
 		System.out.println("Computed After: Cost Net = " + initialNetCost()
 				+ "Overlap = " + initialOverlapCost());
 		System.out.println("AFTER: Net Cost = " + totalNetCost
-				+ "; Overlap Cost = " + totalOverlapCost);
+				+ "; Overlap Cost = " + totalOverlapCost + "Percentage Overlap = " + (double)totalOverlapCost/(double)totBins);
 	}
 	
 	private void makeCellMove(Module m1, Module m2) {
@@ -309,7 +329,7 @@ public class SimAnneal {
 	}
 	
 	int realAccepts = 0, probAccepts = 0;
-	double acceptRatio=1;
+	static double acceptRatio=1;
 	private boolean accept(double diffCost, double t) {		
 		if(diffCost <= 0){
 			
@@ -319,7 +339,7 @@ public class SimAnneal {
 		
 		double y = min(Math.sqrt(t/tStart),Math.pow(Math.E, -(Config.penaltyWeight(c, acceptRatio)*diffCost)/t));
 		//double y = min(1, Math.pow(Math.E, -((ckt.circuit.getVertexCount()) * diffCost)/(10* t)));
-		
+		//double y = min(1,Math.pow(Math.E, -(diffCost)/t));
 		
 		double r = Math.random();
 //		System.out.println("Choosing between " + y + "\t" + r + "for "
