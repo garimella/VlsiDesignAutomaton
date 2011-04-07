@@ -1,14 +1,14 @@
 package designAutomator;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.Vector;
+
+import org.apache.commons.collections15.set.ListOrderedSet;
 
 public class Chip {
 	double area;
@@ -175,6 +175,7 @@ public class Chip {
 		t = p1.xPos; p1.xPos = p2.xPos; p2.xPos = t;
 		t = p1.yPos; p1.yPos = p2.yPos; p2.yPos = t;		
 	}
+	
 	public void dumpChipPlacements(String fileName){
 		try
 		{
@@ -207,41 +208,53 @@ public class Chip {
 	    }
 	}
 	
+	public void dumpChipPlacementsSimple(String fileName){
+		try
+		{
+			FileWriter fstream = new FileWriter(fileName);
+			BufferedWriter out = new BufferedWriter(fstream);			
+			
+			for(Entry<String, Module> modEntry: Module.cellList.entrySet()){
+				out.write(modEntry.getKey() + " " + Double.toString(modEntry.getValue().xPos) + " " 
+					+ Double.toString(modEntry.getValue().yPos) + "\n");
+			}
+			
+			for(Entry<String, Module> modEntry: Module.padList.entrySet()){
+				out.write(modEntry.getKey() + " " + Double.toString(modEntry.getValue().xPos) + " " 
+					+ Double.toString(modEntry.getValue().yPos) + "\n");
+			}
+			out.close();
+	    }
+		catch (Exception e){//Catch exception if any
+	      System.err.println("Error: " + e.getMessage());
+	    }
+	}
+	
 	public void readChipPlacements(String fileName){
 		try
 		{
 			File file = new File(fileName);
 			Scanner scanner = new Scanner(file);
 			
-			// width
-			scanner.nextDouble();
-			// height
-			scanner.nextDouble();
-			
-			int totalModules = scanner.nextInt();
-			
-			for(Entry<String, Module> modEntry: Module.cellList.entrySet()){
-				// width
-				modEntry.getValue().width = scanner.nextDouble();
-				//height
-				scanner.nextDouble();
-				scanner.next();
+			for(Row r: this.rows){
+				r.moduleList = new ListOrderedSet<Module>();
 			}
-			
-//			for(Entry<String, Module> modEntry: Module.padList.entrySet()){
-//				out.write(Double.toString(modEntry.getValue().width) + " " 
-//					+ Double.toString(Module.HEIGHT) + " " + modEntry.getValue().name + "\n");
-//			}
-//			out.write("\n");
-//			for(Entry<String, Module> modEntry: Module.cellList.entrySet()){
-//				out.write(Double.toString(modEntry.getValue().xPos) + " " 
-//					+ Double.toString(modEntry.getValue().yPos) + "\n");
-//			}
-//			for(Entry<String, Module> modEntry: Module.padList.entrySet()){
-//				out.write(Double.toString(modEntry.getValue().xPos) + " " 
-//					+ Double.toString(modEntry.getValue().yPos) + "\n");
-//			}
-//			out.close();
+			while (scanner.hasNext()) {
+				String moduleName = scanner.next();
+				Module m = Module.cellList.get(moduleName);
+				if (m != null) {
+					m.xPos = scanner.nextDouble();
+					m.yPos = scanner.nextDouble();
+					m.binInRow = (int) (m.xPos / Config.binWidth);
+					m.row = this.rows.get((int) (m.yPos / 40));
+					m.row.moduleList.add(m);
+				} else {
+					m = Module.padList.get(moduleName);
+					assert (m != null);
+					m.xPos = scanner.nextDouble();
+					m.yPos = scanner.nextDouble();
+				}
+			}
 	    }
 		catch (Exception e){//Catch exception if any
 	      System.err.println("Error: " + e.getMessage());

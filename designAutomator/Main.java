@@ -9,7 +9,7 @@ public class Main {
 		Chip chip = new Chip();
 		try {
 			//String benchmarkname = args[0];
-			String benchmarkname = "ibm13";
+			String benchmarkname = "ibm01";
 			// The filename of the test-bench
 			//final String filename = "input/test1";
 			final String netListFile = "input/" + benchmarkname + ".net";
@@ -26,26 +26,30 @@ public class Main {
 			chip.placePads();
 			chip.placeCellsRandomly();
 			chip.dumpChipPlacements("result/" + benchmarkname + "_orig.bbb");
-//			if (chip.circuit.getVertexCount() < 100) {
-//				chip.viewNetList();
-//			}
-			System.out.println("initial row width =" + Row.width);
-			// next run the simulated annealing algorithm
-			SimAnneal simAnneal = new SimAnneal(chip, ckt);
+			if (ckt.circuit.getVertexCount() < 100) {
+				ckt.viewNetList();
+			}
 			
-			simAnneal.simAnneal();
+			System.out.println("initial row width =" + Row.width);
+			SimAnneal simAnneal = new SimAnneal(chip, ckt);
+//			simAnneal.simAnneal();
+//			chip.dumpChipPlacementsSimple("result/" + benchmarkname + "_simple.bbb");
+			
+			// instead of simulated annealing, read the values from the dump file
+			chip.readChipPlacements("result/" + benchmarkname + "_simple.bbb");
+			
 			int totalExtraRowWidth = 0;
 			for(Row r: chip.rows) {
 				totalExtraRowWidth += r.numFreeAtEnd();
 			}
 			System.out.println("average row width =" + (Row.width + ((double)totalExtraRowWidth/chip.rows.size())));
+			System.out.println("Before legalization net cost = " + simAnneal.initialNetCost());
 			
-//			Legalizer legalizer = new Legalizer(chip, ckt);
-//			legalizer.legalize();
-//			
-//			System.out.println("Final net cost after legalization = " +simAnneal.initialNetCost());
-//			
-			chip.dumpChipPlacements("result/" + benchmarkname + ".bbb");
+			Legalizer legalizer = new Legalizer(chip, ckt);
+			legalizer.legalize();
+			
+			System.out.println("Final net cost after legalization = " + simAnneal.initialNetCost());
+			chip.dumpChipPlacements("result/" + benchmarkname + "_legalized.bbb");
 		} catch (Exception e) {
 			System.err.println(e.getCause());
 			e.printStackTrace();
