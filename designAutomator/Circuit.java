@@ -107,6 +107,7 @@ public class Circuit {
 		}
 	}
 	
+	static Vector<String> inputCellNames = new Vector<String>();
 	void parseAreaList(String filename) {
 		try {
 			// open the file
@@ -132,6 +133,8 @@ public class Circuit {
 				}
 				int area = new Integer(st.nextToken());
 				m.width = ((area > 8192) ? 8192 : area)/Module.HEIGHT;
+				if (m.type == Module.ModuleType.CELL)
+					inputCellNames.add(m.name);
 			}
 		} catch (Exception e) {
 			System.err.println(e.getCause());

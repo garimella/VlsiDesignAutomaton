@@ -5,7 +5,7 @@ public class Config {
 	
 	static double tStart = 0;
 	static double tStart(int numBlocks){
-		tStart = Math.pow(numBlocks, 2);
+		tStart = Math.pow(numBlocks, 0.8);
 		return tStart;
 	}	
 	
@@ -14,16 +14,16 @@ public class Config {
 	}
 	
 	static double tEnd = .001f;
-	static double binWidth = 5;
+	static double binWidth = 3;
 	// TODO: make it a good function
 	static double alpha(double t, double tS){
 		if (SimAnneal.acceptRatio > 0.6) {
-			return 0.85;
-		} else if (SimAnneal.acceptRatio > 0.3) {
 			return 0.99;
+		} else if (SimAnneal.acceptRatio > 0.3) {
+			return 0.995;
 		}
 		else
-			return 0.90;
+			return 0.99;
 //		if(t > 0.6 * tS){
 //			return 0.90;
 //		}
@@ -36,11 +36,11 @@ public class Config {
 	}
 	
 	// netcost
-	static double beta1 = 30;
+	static double beta1 = 0.4;
 	// overlaps
-	static double beta2 = 500;
+	static double beta2 = 0.2;
 	// Row-width
-	static double beta3 = 5000;
+	static double beta3 = 0.4;
 	
 	static double penaltyWeight(Chip c, double acceptRatio){
 		return 1;
@@ -58,12 +58,13 @@ public class Config {
 	static int innerConditionUpdate = 1;
 	static int M;
 	static void setM(int m) {
-		M = m;
+		//M = m*3;
+		M = (int)Math.pow(m,1.0);
 	}
 	static int maxRetries = 200;
 	static double freeToCellMoveRatio = 5;
 	static double netToOverlapCostFact = 100;
-	public static int numExtraBins = 8;
+	public static int numExtraBins = 0;
 	
 	static int max(int i, int j) {
 		return i > j ? i : j;

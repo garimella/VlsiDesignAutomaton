@@ -1,6 +1,5 @@
 package designAutomator;
 
-
 public class Main {
 	public static void main(String args[]) {
 		long time1= System.currentTimeMillis();
@@ -9,7 +8,7 @@ public class Main {
 		Chip chip = new Chip();
 		try {
 			//String benchmarkname = args[0];
-			String benchmarkname = "ibm01";
+			String benchmarkname = "ibm18";
 			// The filename of the test-bench
 			//final String filename = "input/test1";
 			final String netListFile = "input/" + benchmarkname + ".net";
@@ -49,7 +48,7 @@ public class Main {
 			legalizer.legalize();
 			
 			System.out.println("Final net cost after legalization = " + simAnneal.initialNetCost());
-			chip.dumpChipPlacements("result/" + benchmarkname + "_legalized.bbb");
+			chip.dumpChipPlacements("result/" + benchmarkname + ".bbb");
 		} catch (Exception e) {
 			System.err.println(e.getCause());
 			e.printStackTrace();

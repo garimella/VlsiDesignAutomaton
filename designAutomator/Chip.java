@@ -3,10 +3,14 @@ package designAutomator;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.Vector;
+
+import javax.sql.RowSet;
 
 import org.apache.commons.collections15.set.ListOrderedSet;
 
@@ -137,7 +141,26 @@ public class Chip {
 	
 	// TODO: home work for mr gautham
 	public void placeCellsDeterministically(){
+		int row=0; int binInRow=0;
+		for(String s : Circuit.inputCellNames) {
+			 Module m = Module.cellList.get(s);
+			 if(m.width > maxModuleLen){
+					maxModuleLen = m.width;
+			}
+			m.numBins = (int)Math.ceil(m.width / Config.binWidth);
+			 if(m.numBins + binInRow > (int) (Row.totalBinsInRow*0.9) ){
+				 row += 1;
+				 binInRow = 0;
+			 }
+			 m.binInRow = binInRow;
+			 m.setPosition(rows.get(row), binInRow);			 
+			 rows.get(row).moduleList.add(m);
+			 binInRow+= m.numBins;
+		}
 		
+		for(Row r : rows){
+			r.initialOverlap();
+		}
 	}
 	
 	public void placeCellsRandomly(){

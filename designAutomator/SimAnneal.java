@@ -14,7 +14,13 @@ public class SimAnneal {
 		}
 		return totalCost;
 	}
-	
+	double initialNetCostWithoutPads(){
+		double totalCost = 0;
+		for(Net n : ckt.circuit.getEdges()){
+			totalCost += costNetWithoutPad(n);
+		}
+		return totalCost;
+	}
 	int initialOverlapCost() {
 		int initialOverlap = 0;
 		for (Row row : c.rows) {
@@ -48,6 +54,24 @@ public class SimAnneal {
 			if(m == null) m = Module.padList.get(nameOfModule);
 			
 			assert(m != null);
+			double mXPos = m.xPos +m.width/2;
+			double mYPos = m.yPos +Module.HEIGHT/2;
+			
+			if(mXPos > maxXPos) maxXPos = mXPos;			
+			if(mYPos > maxYPos) maxYPos = mYPos; 
+			if(mXPos < minXPos) minXPos = mXPos;			
+			if(mYPos < minYPos) minYPos = mYPos;
+		}
+		return ((maxXPos-minXPos) + (maxYPos - minYPos));
+	}
+	private double costNetWithoutPad(Net n) {
+		double minXPos=c.width, minYPos = c.height, maxXPos=0, maxYPos=0;
+		for(String nameOfModule: ckt.circuit.getIncidentVertices(n)){
+			Module m;
+			m = Module.cellList.get(nameOfModule);
+			if(m == null) continue;
+			
+			assert(m != null);
 			double mXPos = m.xPos+m.width/2;
 			double mYPos = m.yPos+Module.HEIGHT/2;
 			
@@ -58,12 +82,14 @@ public class SimAnneal {
 		}
 		return ((maxXPos-minXPos) + (maxYPos - minYPos));
 	}
-
 	double penaltyFunction(double netCost, double overlapCost, double rowWidthCost){
 		// Reweight overlapCost and netCost to be in comparable order.
 		double scaledNetCost = netCost/(c.height+c.width);
-		double scaledOverlapCost = overlapCost/c.maxModuleLen; 
-		double scaledRowWidthCost = rowWidthCost/c.width;
+		double scaledOverlapCost = 4*overlapCost/c.maxModuleLen; 
+		double scaledRowWidthCost = 100*rowWidthCost/c.width;
+//		double scaledNetCost = 2*netCost/(c.height+c.width);
+//		double scaledOverlapCost = 6*overlapCost/c.maxModuleLen; 
+//		double scaledRowWidthCost = 80*rowWidthCost/c.width;
 		double penalty = Config.beta1*(scaledNetCost) 
 			+ Config.beta2*(scaledOverlapCost) + Config.beta3*(scaledRowWidthCost);
 		//System.out.println("The penalty = " + penalty + " total overlap = " + totalOverlapCost);
@@ -175,7 +201,7 @@ public class SimAnneal {
 		int acceptCount = 0;
 		int rejectCount = 0;
 		
-		Config.setM((int)Math.pow(ckt.circuit.getVertexCount(), 1.0));
+		Config.setM(ckt.circuit.getVertexCount());
 		
 		// TODO: make it a function of t
 		 //double windowHeight = (c.rows.size())*40;
@@ -336,24 +362,18 @@ public class SimAnneal {
 			realAccepts ++;
 			return true;
 		}
-		
-		double y = min(Math.sqrt(t/tStart),Math.pow(Math.E, -(Config.penaltyWeight(c, acceptRatio)*diffCost)/t));
-		//double y = min(1, Math.pow(Math.E, -((ckt.circuit.getVertexCount()) * diffCost)/(10* t)));
+		//double y = 1/(1+Math.pow(Math.E, diffCost/t));
+		//double y = min(1,Math.pow(Math.E, -(tStart*diffCost/(t))));
+		//double y = min(Math.sqrt(t/tStart),Math.pow(Math.E, -(Config.penaltyWeight(c, acceptRatio)*diffCost)/t));
+		double y = min(1, Math.pow(Math.E, -((ckt.circuit.getVertexCount()) * diffCost)/(t)));
 		//double y = min(1,Math.pow(Math.E, -(diffCost)/t));
 		
 		double r = Math.random();
-//		System.out.println("Choosing between " + y + "\t" + r + "for "
-//				+ "given diff=" + diffCost);
 		if(r < y){
-			//if(y < 0.75) System.out.println("Wow! : "+y);
 			probAccepts++;
 			return true;
 		}
 		return false;
-//			System.out.println("; diffCost = " + diffCost); 
-			
-			
-		
 	}
 	private double min(double d1, double d2) {
 		return (d1 < d2)?d1:d2;
