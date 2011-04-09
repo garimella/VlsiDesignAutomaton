@@ -5,7 +5,7 @@ public class Config {
 	
 	static double tStart = 0;
 	static double tStart(int numBlocks){
-		tStart = Math.pow(numBlocks, 0.8);
+		tStart = Math.pow(numBlocks, 1.0);
 		return tStart;
 	}	
 	
@@ -58,8 +58,7 @@ public class Config {
 	static int innerConditionUpdate = 1;
 	static int M;
 	static void setM(int m) {
-		//M = m*3;
-		M = (int)Math.pow(m,1.0);
+		M = (int)(m*1.5f);
 	}
 	static int maxRetries = 200;
 	static double freeToCellMoveRatio = 5;

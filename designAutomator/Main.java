@@ -7,8 +7,8 @@ public class Main {
 		Circuit ckt = new Circuit();
 		Chip chip = new Chip();
 		try {
-			//String benchmarkname = args[0];
-			String benchmarkname = "ibm18";
+			String benchmarkname = args[0];
+			//String benchmarkname = "ibm17";
 			// The filename of the test-bench
 			//final String filename = "input/test1";
 			final String netListFile = "input/" + benchmarkname + ".net";
@@ -31,11 +31,11 @@ public class Main {
 			
 			System.out.println("initial row width =" + Row.width);
 			SimAnneal simAnneal = new SimAnneal(chip, ckt);
-//			simAnneal.simAnneal();
-//			chip.dumpChipPlacementsSimple("result/" + benchmarkname + "_simple.bbb");
+			simAnneal.simAnneal();
+			chip.dumpChipPlacementsSimple("result/" + benchmarkname + "_simple.bbb");
 			
 			// instead of simulated annealing, read the values from the dump file
-			chip.readChipPlacements("result/" + benchmarkname + "_simple.bbb");
+//			chip.readChipPlacements("result/" + benchmarkname + "_simple.bbb");
 			
 			int totalExtraRowWidth = 0;
 			for(Row r: chip.rows) {

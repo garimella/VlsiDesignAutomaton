@@ -317,8 +317,8 @@ public class SimAnneal {
 				}
 			}
 			acceptRatio = ((double)acceptCount/(acceptCount+rejectCount));
-			System.out.println("Acceptance Ratio:" + acceptRatio + "; t = " + t +
-					" prob = " + probAccepts + " deterministic = " + realAccepts);
+//			System.out.println("Acceptance Ratio:" + acceptRatio + "; t = " + t +
+//					" prob = " + probAccepts + " deterministic = " + realAccepts);
 			probAccepts = 0;
 			realAccepts = 0;
 			if(acceptRatio<0.05){
